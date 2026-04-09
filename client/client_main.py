@@ -1,8 +1,11 @@
 from PyQt6.QtGui import QStandardItemModel, QStandardItem
 from PyQt6.QtCore import Qt
 from PyQt6 import QtWidgets
+from PyQt6.QtWidgets import QVBoxLayout
+from datetime import datetime
+from classes.classes import Book, BookCard
+
 from windows import clientWindow
-# Импортируем наш новый делегат
 from client.delegates import RangeDelegate
 
 
@@ -11,19 +14,22 @@ class Client(QtWidgets.QMainWindow, clientWindow.Ui_MainWindow):
         super().__init__()
         self.setupUi(self)
 
+        # --- Установка дерева с фильтрами ---------------------
         self.tree_model = setup_filter_tree()
-        self.filter_tree.setModel(self.tree_model)
         self.filter_tree.expandAll()
+        self.filter_tree.setModel(self.tree_model)
 
         self.filter_tree.setIndentation(20)
         self.filter_tree.setAnimated(True)
         self.filter_tree.setAlternatingRowColors(True)
         self.filter_tree.setUniformRowHeights(False)
 
-        # Назначаем наш умный делегат на дерево
-        self.range_delegate = RangeDelegate(self.filter_tree)
+        self.range_delegate = RangeDelegate()
         self.filter_tree.setItemDelegate(self.range_delegate)
 
+        load_books(self)
+
+        # --- Привязка событий под кнопки и триггеры ------------
         self.exit_btn.clicked.connect(self.exit)
         self.exit_action.triggered.connect(self.exit)
 
@@ -66,6 +72,30 @@ def setup_filter_tree():
         return item
 
     model.appendRow(create_range_item("Дата издания", "1800-2026", 1800, 2026, 1, 0))
-    model.appendRow(create_range_item("Рейтинг", "1-5", 1, 5, 0.5, 1))
+    model.appendRow(create_range_item("Рейтинг", "1-5 ★", 1, 5, 0.5, 1))
 
     return model
+
+
+def load_books(self):
+    books = [Book("ad","23","23",
+                  datetime.strptime("20.05.2025", "%d.%m.%Y"), ""),
+             Book("ad", "23", "23",
+                  datetime.strptime("20.05.2025", "%d.%m.%Y"), ""),
+             Book("ad", "23", "23",
+                  datetime.strptime("20.05.2025", "%d.%m.%Y"), ""),
+             Book("ad", "23", "23",
+                  datetime.strptime("20.05.2025", "%d.%m.%Y"), ""),
+             Book("ad", "23", "23",                                
+                  datetime.strptime("20.05.2025", "%d.%m.%Y"), ""),
+             ]
+
+    layout = self.scrollAreaWidgetContents.layout()
+
+    if layout is None:
+        layout = QVBoxLayout(self.scrollAreaWidgetContents)
+        self.scrollAreaWidgetContents.setLayout(layout)
+
+    for book in books:
+        book_card = BookCard(book)
+        layout.addWidget(book_card)

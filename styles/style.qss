@@ -1,6 +1,7 @@
 /* ==============================================
    Общие настройки для всех виджетов
-   ============================================== */
+   ==============================================
+*/
 QWidget {
     background-color: #F8FBF8; /* Очень светлый зеленовато-серый фон окна */
     color: #333333;            /* Темно-серый текст для мягкого контраста */
@@ -10,7 +11,8 @@ QWidget {
 
 /* ==============================================
    Кнопки (QPushButton)
-   ============================================== */
+   ==============================================
+*/
 QPushButton {
     background-color: #4CAF50; /* Основной зеленый */
     color: white;
@@ -35,7 +37,8 @@ QPushButton:disabled {
 
 /* ==============================================
    Поля ввода и спинбоксы (QLineEdit, QSpinBox, QComboBox)
-   ============================================== */
+   ==============================================
+*/
 QLineEdit, QSpinBox, QComboBox {
     background-color: #ffffff;
     border: 1px solid #cccccc;
@@ -62,8 +65,9 @@ QSpinBox::up-button:hover, QSpinBox::down-button:hover {
 }
 
 /* ==============================================
-   Таблицы и Деревья (QTableWidget, QTreeView)
-   ============================================== */
+   Таблицы и Деревья (QTableWidget, QTreeView, QListView)
+   ==============================================
+*/
 QTableWidget, QTreeView, QListView {
     background-color: #ffffff;
     alternate-background-color: #f9fdf9; /* Зеленоватая "зебра" */
@@ -88,7 +92,8 @@ QTableWidget::item:selected, QTreeView::item:selected {
 
 /* ==============================================
    Заголовки таблиц (QHeaderView)
-   ============================================== */
+   ==============================================
+*/
 QHeaderView::section {
     background-color: #e8f5e9;
     color: #2e7d32; /* Темно-зеленый текст заголовков */
@@ -101,7 +106,8 @@ QHeaderView::section {
 
 /* ==============================================
    Чекбоксы в TreeView и обычные QCheckBox
-   ============================================== */
+   ==============================================
+*/
 QCheckBox, QRadioButton {
     spacing: 8px;
 }
@@ -127,7 +133,8 @@ QTreeView::indicator:checked, QCheckBox::indicator:checked {
 
 /* ==============================================
    Скроллбары (Полосы прокрутки)
-   ============================================== */
+   ==============================================
+*/
 QScrollBar:vertical {
     border: none;
     background: #f0f0f0;
@@ -170,4 +177,78 @@ QScrollBar::handle:horizontal:hover {
 
 QScrollBar::add-line:horizontal, QScrollBar::sub-line:horizontal {
     width: 0px;
+}
+
+/* ==============================================
+   Области прокрутки (QScrollArea)
+   ==============================================
+*/
+QScrollArea {
+    background-color: #ffffff;
+    border: 1px solid #e0e0e0;
+    border-radius: 6px;
+}
+
+/* Настройка внутреннего виджета и области просмотра */
+QScrollArea > QWidget > QWidget,
+QScrollArea #scrollAreaWidgetContents {
+    background-color: #ffffff;
+}
+
+/* ==============================================
+   Надписи и гиперссылки (QLabel)
+   ==============================================
+*/
+QLabel {
+    color: #333333;
+    font-size: 16px;
+    background-color: transparent;
+}
+
+/* Принудительная перекраска HTML-ссылок */
+QLabel a,
+QLabel a:link,
+QLabel a:visited {
+    color: #4CAF50 !important; /* Основной зеленый */
+    text-decoration: underline;
+    font-weight: bold;
+}
+
+QLabel a:hover {
+    color: #45a049 !important; /* Тон кнопок при наведении */
+}
+
+/* ==============================================
+   Карточка книги (BookCardWidget)
+   ==============================================
+*/
+#BookCardWidget {
+    background-color: #ffffff;
+    border: 1px solid #e0e0e0;
+    border-radius: 10px;
+}
+
+#BookCardWidget:hover {
+    border: 1px solid #4CAF50;
+}
+
+#name_label {
+    font-size: 18px;
+    font-weight: bold;
+    color: #2e7d32;
+}
+
+#author_label {
+    color: #777777;
+    font-style: italic;
+}
+
+#summary_label {
+    color: #333333;
+    line-height: 1.2;
+}
+
+#date_label {
+    color: #888888;
+    font-size: 12px;
 }

@@ -65,10 +65,13 @@ class RangeDelegate(QStyledItemDelegate):
         val_from = editor.spin_from.value()
         val_to = editor.spin_to.value()
 
+        if (val_from > val_to):
+            return
+
         fmt = lambda v: str(int(v)) if v == int(v) else str(round(v, 1))
 
         # Сохраняем в модель итоговую строку
-        result = f"{name}: {fmt(val_from)}-{fmt(val_to)}"
+        result = f"{name}: {fmt(val_from)}-{fmt(val_to)} {'★' * (name == 'Рейтинг') }"
         model.setData(index, result, Qt.ItemDataRole.EditRole)
 
     def updateEditorGeometry(self, editor, option, index):
