@@ -7,7 +7,8 @@ from classes.classes import Book, BookCard
 
 from windows import clientWindow
 from client.delegates import RangeDelegate
-from rapidfuzz import process, fuzz
+# from rapidfuzz import process, fuzz
+from database.database import BookTable
 
 
 class Client(QtWidgets.QMainWindow, clientWindow.Ui_MainWindow):
@@ -82,29 +83,77 @@ def setup_filter_tree():
 
 
 def load_books(self):
-    books = [
-        Book("Мастер и Маргарита", "Михаил Булгаков", "Классика о Москве, любви и визите дьявола.",
-             datetime.strptime("15.01.1967", "%d.%m.%Y"), ""),
-        Book("1984", "Джордж Оруэлл", "Культовая антиутопия о тоталитаризме и Большом Брате.",
-             datetime.strptime("08.06.1949", "%d.%m.%Y"), ""),
-        Book("Чистый код", "Роберт Мартин", "Руководство по созданию гибкого и понятного программного обеспечения.",
-             datetime.strptime("01.08.2008", "%d.%m.%Y"), ""),
-        Book("Ведьмак: Последнее желание", "Анджей Сапковский", "Первая книга о приключениях Геральта из Ривии.",
-             datetime.strptime("20.12.1993", "%d.%m.%Y"), ""),
-        Book("Алгоритмы: построение и анализ", "Томас Кормен",
-             "Фундаментальный труд по основам современных алгоритмов.",
-             datetime.strptime("10.04.1990", "%d.%m.%Y"), ""),
-        Book("Марсианин", "Энди Уир", "История выживания инженера на красной планете в одиночку.",
-             datetime.strptime("11.02.2011", "%d.%m.%Y"), ""),
-        Book("Цветы для Элджернона", "Дэниел Киз", "Трогательная история об эксперименте над человеческим интеллектом.",
-             datetime.strptime("10.03.1959", "%d.%m.%Y"), ""),
-        Book("Гарри Поттер и философский камень", "Дж.К. Роулинг", "Начало истории о мальчике, который выжил.",
-             datetime.strptime("26.06.1997", "%d.%m.%Y"), ""),
-        Book("Идеальный программист", "Роберт Мартин",
-             "Книга о профессиональном подходе к разработке и ответственности.",
-             datetime.strptime("13.05.2011", "%d.%m.%Y"), ""),
-        Book("Краткая история времени", "Стивен Хокинг", "Научно-популярный бестселлер об устройстве Вселенной.",
-             datetime.strptime("01.04.1988", "%d.%m.%Y"), "")
+    books_list = [
+        BookTable(
+            name="Мастер и Маргарита",
+            author="Михаил Булгаков",
+            summary="Классика о Москве, любви и визите дьявола.",
+            public_date=datetime.strptime("15.01.1967", "%d.%m.%Y").date(),
+            cover_path=""
+        ),
+        BookTable(
+            name="1984",
+            author="Джордж Оруэлл",
+            summary="Культовая антиутопия о тоталитаризме и Большом Брате.",
+            public_date=datetime.strptime("08.06.1949", "%d.%m.%Y").date(),
+            cover_path=""
+        ),
+        BookTable(
+            name="Чистый код",
+            author="Роберт Мартин",
+            summary="Руководство по созданию гибкого и понятного программного обеспечения.",
+            public_date=datetime.strptime("01.08.2008", "%d.%m.%Y").date(),
+            cover_path=""
+        ),
+        BookTable(
+            name="Ведьмак: Последнее желание",
+            author="Анджей Сапковский",
+            summary="Первая книга о приключениях Геральта из Ривии.",
+            public_date=datetime.strptime("20.12.1993", "%d.%m.%Y").date(),
+            cover_path=""
+        ),
+        BookTable(
+            name="Алгоритмы: построение и анализ",
+            author="Томас Кормен",
+            summary="Фундаментальный труд по основам современных алгоритмов.",
+            public_date=datetime.strptime("10.04.1990", "%d.%m.%Y").date(),
+            cover_path=""
+        ),
+        BookTable(
+            name="Марсианин",
+            author="Энди Уир",
+            summary="История выживания инженера на красной планете в одиночку.",
+            public_date=datetime.strptime("11.02.2011", "%d.%m.%Y").date(),
+            cover_path=""
+        ),
+        BookTable(
+            name="Цветы для Элджернона",
+            author="Дэниел Киз",
+            summary="Трогательная история об эксперименте над человеческим интеллектом.",
+            public_date=datetime.strptime("10.03.1959", "%d.%m.%Y").date(),
+            cover_path=""
+        ),
+        BookTable(
+            name="Гарри Поттер и философский камень",
+            author="Дж.К. Роулинг",
+            summary="Начало истории о мальчике, который выжил.",
+            public_date=datetime.strptime("26.06.1997", "%d.%m.%Y").date(),
+            cover_path=""
+        ),
+        BookTable(
+            name="Идеальный программист",
+            author="Роберт Мартин",
+            summary="Книга о профессиональном подходе к разработке и ответственности.",
+            public_date=datetime.strptime("13.05.2011", "%d.%m.%Y").date(),
+            cover_path=""
+        ),
+        BookTable(
+            name="Краткая история времени",
+            author="Стивен Хокинг",
+            summary="Научно-популярный бестселлер об устройстве Вселенной.",
+            public_date=datetime.strptime("01.04.1988", "%d.%m.%Y").date(),
+            cover_path=""
+        )
     ]
 
     layout = self.scrollAreaWidgetContents.layout()
@@ -113,6 +162,6 @@ def load_books(self):
         layout = QVBoxLayout(self.scrollAreaWidgetContents)
         self.scrollAreaWidgetContents.setLayout(layout)
 
-    for book in books:
+    for book in books_list:
         book_card = BookCard(book)
         layout.addWidget(book_card)

@@ -1,9 +1,11 @@
+from datetime import datetime
+
 from PyQt6 import QtCore
 from PyQt6.QtWidgets import QWidget
-from datetime import datetime
 from PyQt6.QtGui import QPixmap
 
 from windows.bookCardWidget import Ui_BookCardWidget
+from database.database import BookTable
 
 
 class Book:
@@ -23,7 +25,7 @@ class Book:
 
 
 class BookCard(QWidget):
-    def __init__(self, book: Book):
+    def __init__(self, book: BookTable):
         super().__init__()
         self.ui = Ui_BookCardWidget()
         self.ui.setupUi(self)
