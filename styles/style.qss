@@ -245,6 +245,7 @@ QLabel a:hover {
 
 #summary_label {
     color: #333333;
+    font-size: 14px;
     line-height: 1.2;
 }
 

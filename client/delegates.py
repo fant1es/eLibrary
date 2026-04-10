@@ -65,7 +65,7 @@ class RangeDelegate(QStyledItemDelegate):
         val_from = editor.spin_from.value()
         val_to = editor.spin_to.value()
 
-        if (val_from > val_to):
+        if val_from > val_to:
             return
 
         fmt = lambda v: str(int(v)) if v == int(v) else str(round(v, 1))
