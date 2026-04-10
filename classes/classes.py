@@ -1,27 +1,9 @@
-from datetime import datetime
-
 from PyQt6 import QtCore
 from PyQt6.QtWidgets import QWidget
 from PyQt6.QtGui import QPixmap
 
 from windows.bookCardWidget import Ui_BookCardWidget
 from database.database import BookTable
-
-
-class Book:
-    def __init__(self, name: str, author: str, summary: str,
-                 public_date: datetime, cover_path: str, id: int = None):
-        self.id = id
-        self.name = name
-        self.author = author
-        self.summary = summary
-        self.public_date = public_date
-        self.cover_path = cover_path
-
-    def __str__(self):
-        date = self.public_date.strftime("%d.%m.%Y")
-        return (f"Книга #{self.id}: {self.name}, Автор: {self.author},"
-                f" Дата издания: {date}")
 
 
 class BookCard(QWidget):

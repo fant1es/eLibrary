@@ -1,6 +1,6 @@
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
-from database import BookTable
+from .database import BookTable
 
 
 async def get_books(db: AsyncSession) -> list[BookTable]:

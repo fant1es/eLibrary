@@ -1,18 +1,24 @@
 import sys
 from PyQt6.QtWidgets import QApplication
-from client import client_main
+from client.client_main import Client
 
-if __name__ == "__main__":
+
+def main():
+    # Запускаем обычный PyQt интерфейс
     app = QApplication(sys.argv)
 
     try:
         with open("styles/style.qss", "r", encoding="utf-8") as file:
             app.setStyleSheet(file.read())
     except FileNotFoundError:
-        print("Файл стилей не найден, загружен стандартный вид.")
+        print("Файл стилей не найден.")
 
-    window = client_main.Client()
+    window = Client()
     window.show()
 
-    app.exec()
-    
+    # Запускаем стандартный цикл PyQt (он заблокирует поток до закрытия окна)
+    sys.exit(app.exec())
+
+
+if __name__ == "__main__":
+    main()

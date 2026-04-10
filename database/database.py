@@ -1,11 +1,27 @@
 from datetime import date
 from typing import AsyncGenerator
-from sqlalchemy.orm import DeclarativeBase, mapped_column, Mapped
+from sqlalchemy.orm import DeclarativeBase, mapped_column, Mapped, relationship
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
-from sqlalchemy import String, Text, Date
+from sqlalchemy import String, Text, Date, Float, Table, Column, ForeignKey
 
-DATABASE_URL = "postgresql+asyncpg://postgre:mypassword@localhost:5432/booksDB"
-engine = create_async_engine(DATABASE_URL, echo=True)
+import os
+from dotenv import load_dotenv
+
+# Загружаем переменные из .env в систему
+load_dotenv()
+
+DB_USER = os.getenv("DB_USER")
+DB_PASSWORD = os.getenv("DB_PASSWORD")
+DB_HOST = os.getenv("DB_HOST")
+DB_PORT = os.getenv("DB_PORT")
+DB_NAME = os.getenv("DB_NAME")
+
+if not all([DB_USER, DB_PASSWORD, DB_HOST, DB_PORT, DB_NAME]):
+    raise ValueError("Не все переменные окружения загружены. Проверь .env файл.")
+
+DATABASE_URL = f"postgresql+asyncpg://{DB_USER}:{DB_PASSWORD}@{DB_HOST}:{DB_PORT}/{DB_NAME}"
+
+engine = create_async_engine(DATABASE_URL,echo=True)
 
 AsyncSessionLocal = async_sessionmaker(
     # Движок для создания
@@ -28,6 +44,28 @@ class Base(DeclarativeBase):
     pass
 
 
+# Для ассоциации книг с жанрами и наоборот
+book_genre_association = Table(
+    "book_genre_association",
+    Base.metadata,
+    Column("book_id", ForeignKey("books.id"), primary_key=True),
+    Column("genre_id", ForeignKey("genres.id"), primary_key=True),
+)
+
+
+# Класс для жанров (есть т.к. жанров у книги может быть несколько)
+class GenreTable(Base):
+    __tablename__ = "genres"
+    id: Mapped[int] = mapped_column(primary_key=True)
+    name: Mapped[str] = mapped_column(String(50), unique=True)
+
+    # Класс в кавычках потому что на данной строке он еще не объявлен
+    books: Mapped[list["BookTable"]] = relationship(
+        secondary=book_genre_association,
+        back_populates="genres"
+    )
+
+
 # Общий класс для работы с таблицей и окном клиента
 class BookTable(Base):
     __tablename__ = "books"
@@ -36,8 +74,14 @@ class BookTable(Base):
     name: Mapped[str] = mapped_column(String(255), nullable=False)
     author: Mapped[str] = mapped_column(String(100), nullable=False)
     summary: Mapped[str] = mapped_column(Text, nullable=True)
+    rating: Mapped[float] = mapped_column(Float, nullable=False)
     cover_path: Mapped[str] = mapped_column(String(255), nullable=True)
     public_date: Mapped[date] = mapped_column(Date, nullable=False)
+
+    genres: Mapped[list[GenreTable]] = relationship(
+        secondary=book_genre_association,
+        back_populates="books"
+    )
 
     def __repr__(self):
         book_date = self.public_date.strftime("%d.%m.%Y")

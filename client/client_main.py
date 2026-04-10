@@ -1,13 +1,14 @@
+from datetime import datetime
 
 from PyQt6.QtGui import QStandardItemModel, QStandardItem
 from PyQt6 import QtWidgets
 from PyQt6.QtWidgets import QVBoxLayout
-from datetime import datetime
-from classes.classes import Book, BookCard
 
-from windows import clientWindow
-from client.delegates import RangeDelegate
 # from rapidfuzz import process, fuzz
+
+from classes.classes import BookCard
+from client.delegates import RangeDelegate
+from windows import clientWindow
 from database.database import BookTable
 
 
