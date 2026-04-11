@@ -10,12 +10,22 @@ from classes.classes import BookCard
 from client.delegates import RangeDelegate
 from windows import clientWindow
 from database.database import BookTable
+from client.socket_worker import SocketWorker
 
 
 class Client(QtWidgets.QMainWindow, clientWindow.Ui_MainWindow):
     def __init__(self):
         super().__init__()
         self.setupUi(self)
+
+        # --- Установка потока с сокетом -----------------------
+        self.socket_worker = SocketWorker()
+        self.socket_worker.connected.connect(lambda: print("Успешное подключение!"))
+        self.socket_worker.connected.connect(lambda: self.socket_worker.send("ping"))
+        self.socket_worker.disconnected.connect(lambda: print("Отключение от сервера."))
+        self.socket_worker.response_received.connect(self.on_server_response)
+
+        self.socket_worker.start()
 
         # --- Установка дерева с фильтрами ---------------------
         self.tree_model = setup_filter_tree()
@@ -38,8 +48,13 @@ class Client(QtWidgets.QMainWindow, clientWindow.Ui_MainWindow):
         self.exit_btn.clicked.connect(self.exit)
         self.exit_action.triggered.connect(self.exit)
 
+    def on_server_response(self, message: str):
+        print(f"Получено сообщение от сервера: {message}")
+
 
     def exit(self):
+        self.socket_worker.stop()
+        self.socket_worker.wait()
         self.close()
 
 
