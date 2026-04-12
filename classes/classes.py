@@ -7,21 +7,17 @@ from database.database import BookTable
 
 
 class BookCard(QWidget):
-    def __init__(self, book: BookTable):
+    def __init__(self, name: str, author: str, public_date,
+                 rating: float, genres: list[str], summary: str, pixmap: QPixmap):
         super().__init__()
         self.ui = Ui_BookCardWidget()
         self.ui.setupUi(self)
-
-        # Для подсветки и наличия границы у карточки
         self.setAttribute(QtCore.Qt.WidgetAttribute.WA_StyledBackground)
 
-        self.book = book
-
-        pixmap = QPixmap(self.book.cover_path)
         self.ui.picture_label.setPixmap(pixmap)
-        self.ui.name_label.setText(self.book.name)
-        self.ui.author_label.setText(self.book.author)
-        self.ui.summary_label.setText(self.book.summary)
-        self.ui.date_label.setText("Дата издания: " + self.book.public_date.strftime("%d.%m.%Y"))
+        self.ui.name_label.setText(name)
+        self.ui.author_label.setText(author)
+        self.ui.summary_label.setText(summary)
+        self.ui.date_label.setText("Дата издания: " + public_date.strftime("%d.%m.%Y"))
         self.ui.download_label.setText(
             '<a href="download" style="color: #4CAF50; font-size: 14px; text-decoration: underline;">Скачать книгу</a>')

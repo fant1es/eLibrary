@@ -22,6 +22,8 @@ class Ui_BookCardWidget(object):
         sizePolicy.setHeightForWidth(self.picture_label.sizePolicy().hasHeightForWidth())
         self.picture_label.setSizePolicy(sizePolicy)
         self.picture_label.setMinimumSize(QtCore.QSize(188, 0))
+        self.picture_label.setMaximumSize(QtCore.QSize(231, 380))
+        self.picture_label.setScaledContents(True)
         self.picture_label.setObjectName("picture_label")
         self.horizontalLayout.addWidget(self.picture_label)
         self.verticalLayout = QtWidgets.QVBoxLayout()

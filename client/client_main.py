@@ -1,15 +1,15 @@
 from datetime import datetime
-
-from PyQt6.QtGui import QStandardItemModel, QStandardItem
+import base64
+from PyQt6.QtGui import QStandardItemModel, QStandardItem, QPixmap
 from PyQt6 import QtWidgets
 from PyQt6.QtWidgets import QVBoxLayout
+from PyQt6.QtCore import QByteArray
 
 # from rapidfuzz import process, fuzz
 
 from classes.classes import BookCard
 from client.delegates import RangeDelegate
 from windows import clientWindow
-from database.database import BookTable
 from client.socket_worker import SocketWorker
 
 
@@ -50,15 +50,24 @@ class Client(QtWidgets.QMainWindow, clientWindow.Ui_MainWindow):
         layout = self.scrollAreaWidgetContents.layout() or QVBoxLayout(self.scrollAreaWidgetContents)
 
         for book in books:
-            book_card = BookCard(BookTable(
-                id=book["id"],
+            cover_b64 = book.get("cover_pic")
+            if cover_b64:
+                pixmap = QPixmap()
+                pixmap.loadFromData(QByteArray(base64.b64decode(cover_b64)))
+                print('check')
+            else:
+                pixmap = QPixmap()  # заглушка
+                print("bad")
+
+            book_card = BookCard(
                 name=book["name"],
                 author=book["author"],
-                summary=book["summary"],
-                rating=book["rating"],
-                cover_path=book["cover_path"],
                 public_date=datetime.strptime(book["public_date"], "%d.%m.%Y").date(),
-            ))
+                rating=book["rating"],
+                genres=book["genres"],
+                summary=book["summary"],
+                pixmap=pixmap,
+            )
             layout.addWidget(book_card)
 
 

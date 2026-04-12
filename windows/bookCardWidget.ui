@@ -28,8 +28,17 @@
        <height>0</height>
       </size>
      </property>
+     <property name="maximumSize">
+      <size>
+       <width>231</width>
+       <height>380</height>
+      </size>
+     </property>
      <property name="text">
       <string>Пикча</string>
+     </property>
+     <property name="scaledContents">
+      <bool>true</bool>
      </property>
     </widget>
    </item>
