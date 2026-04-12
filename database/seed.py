@@ -1,17 +1,14 @@
 # Файл нужен для генерации данных в базу данных
 # !!! ВЫЗВАТЬ ВСЕГО ОДИН РАЗ !!!
-import asyncio
 from datetime import datetime
-from .database import AsyncSessionLocal
-from .database import GenreTable, BookTable
-from .database import init_db
+from .database import SessionLocal, GenreTable, BookTable, init_db
 from sqlalchemy import select, func
 
 
-async def seed_data():
-    async with AsyncSessionLocal() as session:
+def seed_data():
+    with SessionLocal() as session:
         # Проверяем количество записей в таблице книг
-        result = await session.execute(select(func.count()).select_from(BookTable))
+        result = session.execute(select(func.count()).select_from(BookTable))
         count = result.scalar()
 
         if count > 0:
@@ -108,16 +105,10 @@ async def seed_data():
         ]
 
         session.add_all(books_to_add)
-        await session.commit()
+        session.commit()
         print("База была пуста. Данные успешно добавлены!")
 
 
 if __name__ == "__main__":
-
-    async def run_setup():
-        print("Начинаю настройку базы...")
-        await init_db()
-        await seed_data()
-        print("Готово!")
-
-    asyncio.run(run_setup())
+    init_db()
+    seed_data()

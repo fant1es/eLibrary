@@ -1,3 +1,4 @@
+import json
 import socket, os
 from PyQt6.QtCore import QThread, pyqtSignal
 from dotenv import load_dotenv
@@ -9,7 +10,7 @@ class SocketWorker(QThread):
     # Сигналы для вызова методов в UI (вызывать напрямую из потока нельзя)
     connected = pyqtSignal()
     disconnected = pyqtSignal()
-    response_received = pyqtSignal(str)
+    books_received = pyqtSignal(list)
     error_occurred = pyqtSignal(str)
 
     HOST = os.getenv("SERVER_HOST", "127.0.0.1")
@@ -28,10 +29,20 @@ class SocketWorker(QThread):
             self.connected.emit()
 
             while self._running:
-                data = self._socket.recv(1024)
-                if not data:
+                # Читаем 4 байта — длина следующего сообщения
+                raw_len = self._recv_exact(4)
+                if not raw_len:
                     break
-                self.response_received.emit(data.decode())
+                message_len = int.from_bytes(raw_len, "big")
+
+                raw_data = self._recv_exact(message_len)
+                if not raw_data:
+                    break
+
+                json_data = json.loads(raw_data.decode())
+                # Точная проверка после выгрузки json на список
+                if isinstance(json_data, list):
+                    self.books_received.emit(json_data)
 
         except ConnectionRefusedError:
             self.error_occurred.emit("Сервер недоступен")
@@ -41,6 +52,15 @@ class SocketWorker(QThread):
         finally:
             self._running = False
             self.disconnected.emit()
+
+    def _recv_exact(self, msg_len: int) -> bytes | None:
+        buffer = bytearray()
+        while len(buffer) < msg_len:
+            chunk = self._socket.recv(msg_len - len(buffer))
+            if not chunk:
+                return None
+            buffer += chunk
+        return bytes(buffer)
 
     def send(self, message: str):
         if self._socket and self._running:

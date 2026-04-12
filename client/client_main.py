@@ -21,9 +21,9 @@ class Client(QtWidgets.QMainWindow, clientWindow.Ui_MainWindow):
         # --- Установка потока с сокетом -----------------------
         self.socket_worker = SocketWorker()
         self.socket_worker.connected.connect(lambda: print("Успешное подключение!"))
-        self.socket_worker.connected.connect(lambda: self.socket_worker.send("ping"))
+        self.socket_worker.connected.connect(lambda: self.socket_worker.send("get_books"))
         self.socket_worker.disconnected.connect(lambda: print("Отключение от сервера."))
-        self.socket_worker.response_received.connect(self.on_server_response)
+        self.socket_worker.books_received.connect(self.on_books_received)
 
         self.socket_worker.start()
 
@@ -40,16 +40,26 @@ class Client(QtWidgets.QMainWindow, clientWindow.Ui_MainWindow):
         self.range_delegate = RangeDelegate()
         self.filter_tree.setItemDelegate(self.range_delegate)
 
-        load_books(self)
-
         print(self.scrollAreaWidgetContents.children())
 
         # --- Привязка событий под кнопки и триггеры ------------
         self.exit_btn.clicked.connect(self.exit)
         self.exit_action.triggered.connect(self.exit)
 
-    def on_server_response(self, message: str):
-        print(f"Получено сообщение от сервера: {message}")
+    def on_books_received(self, books: list[dict]):
+        layout = self.scrollAreaWidgetContents.layout() or QVBoxLayout(self.scrollAreaWidgetContents)
+
+        for book in books:
+            book_card = BookCard(BookTable(
+                id=book["id"],
+                name=book["name"],
+                author=book["author"],
+                summary=book["summary"],
+                rating=book["rating"],
+                cover_path=book["cover_path"],
+                public_date=datetime.strptime(book["public_date"], "%d.%m.%Y").date(),
+            ))
+            layout.addWidget(book_card)
 
 
     def exit(self):
@@ -96,88 +106,3 @@ def setup_filter_tree():
     model.appendRow(create_range_item("Рейтинг", "1-5 ★", 1, 5, 0.5, 1))
 
     return model
-
-
-def load_books(self):
-    books_list = [
-        BookTable(
-            name="Мастер и Маргарита",
-            author="Михаил Булгаков",
-            summary="Классика о Москве, любви и визите дьявола.",
-            public_date=datetime.strptime("15.01.1967", "%d.%m.%Y").date(),
-            cover_path=""
-        ),
-        BookTable(
-            name="1984",
-            author="Джордж Оруэлл",
-            summary="Культовая антиутопия о тоталитаризме и Большом Брате.",
-            public_date=datetime.strptime("08.06.1949", "%d.%m.%Y").date(),
-            cover_path=""
-        ),
-        BookTable(
-            name="Чистый код",
-            author="Роберт Мартин",
-            summary="Руководство по созданию гибкого и понятного программного обеспечения.",
-            public_date=datetime.strptime("01.08.2008", "%d.%m.%Y").date(),
-            cover_path=""
-        ),
-        BookTable(
-            name="Ведьмак: Последнее желание",
-            author="Анджей Сапковский",
-            summary="Первая книга о приключениях Геральта из Ривии.",
-            public_date=datetime.strptime("20.12.1993", "%d.%m.%Y").date(),
-            cover_path=""
-        ),
-        BookTable(
-            name="Алгоритмы: построение и анализ",
-            author="Томас Кормен",
-            summary="Фундаментальный труд по основам современных алгоритмов.",
-            public_date=datetime.strptime("10.04.1990", "%d.%m.%Y").date(),
-            cover_path=""
-        ),
-        BookTable(
-            name="Марсианин",
-            author="Энди Уир",
-            summary="История выживания инженера на красной планете в одиночку.",
-            public_date=datetime.strptime("11.02.2011", "%d.%m.%Y").date(),
-            cover_path=""
-        ),
-        BookTable(
-            name="Цветы для Элджернона",
-            author="Дэниел Киз",
-            summary="Трогательная история об эксперименте над человеческим интеллектом.",
-            public_date=datetime.strptime("10.03.1959", "%d.%m.%Y").date(),
-            cover_path=""
-        ),
-        BookTable(
-            name="Гарри Поттер и философский камень",
-            author="Дж.К. Роулинг",
-            summary="Начало истории о мальчике, который выжил.",
-            public_date=datetime.strptime("26.06.1997", "%d.%m.%Y").date(),
-            cover_path=""
-        ),
-        BookTable(
-            name="Идеальный программист",
-            author="Роберт Мартин",
-            summary="Книга о профессиональном подходе к разработке и ответственности.",
-            public_date=datetime.strptime("13.05.2011", "%d.%m.%Y").date(),
-            cover_path=""
-        ),
-        BookTable(
-            name="Краткая история времени",
-            author="Стивен Хокинг",
-            summary="Научно-популярный бестселлер об устройстве Вселенной.",
-            public_date=datetime.strptime("01.04.1988", "%d.%m.%Y").date(),
-            cover_path=""
-        )
-    ]
-
-    layout = self.scrollAreaWidgetContents.layout()
-
-    if layout is None:
-        layout = QVBoxLayout(self.scrollAreaWidgetContents)
-        self.scrollAreaWidgetContents.setLayout(layout)
-
-    for book in books_list:
-        book_card = BookCard(book)
-        layout.addWidget(book_card)

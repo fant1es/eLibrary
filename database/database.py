@@ -1,10 +1,7 @@
 from datetime import date
-from typing import AsyncGenerator
-from sqlalchemy.orm import DeclarativeBase, mapped_column, Mapped, relationship
-from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
-from sqlalchemy import String, Text, Date, Float, Table, Column, ForeignKey
+from sqlalchemy.orm import DeclarativeBase, mapped_column, Mapped, relationship, Session, sessionmaker
+from sqlalchemy import String, Text, Date, Float, Table, Column, ForeignKey, create_engine
 from urllib.parse import quote_plus
-
 import os
 from dotenv import load_dotenv
 
@@ -20,23 +17,9 @@ DB_NAME = os.getenv("DB_NAME")
 if not all([DB_USER, DB_PASSWORD, DB_HOST, DB_PORT, DB_NAME]):
     raise ValueError("Не все переменные окружения загружены. Проверь .env файл.")
 
-DATABASE_URL = f"postgresql+asyncpg://{quote_plus(DB_USER)}:{quote_plus(DB_PASSWORD)}@{DB_HOST}:{DB_PORT}/{DB_NAME}"
-engine = create_async_engine(DATABASE_URL, echo=False)
-
-AsyncSessionLocal = async_sessionmaker(
-    # Движок для создания
-    engine,
-    # Тип сессии
-    class_=AsyncSession,
-    # Объекты не "протухают" после commit
-    expire_on_commit=False
-)
-
-
-# Метод для передачи сессии в crud
-async def get_db() -> AsyncGenerator[AsyncSession, None]:
-    async with AsyncSessionLocal() as session:
-        yield session
+DATABASE_URL = f"postgresql+psycopg2://{quote_plus(DB_USER)}:{quote_plus(DB_PASSWORD)}@{DB_HOST}:{DB_PORT}/{DB_NAME}"
+engine = create_engine(DATABASE_URL, echo=False)
+SessionLocal = sessionmaker(bind=engine, expire_on_commit=False)
 
 
 # Класс для работы со всеми таблицами
@@ -89,8 +72,6 @@ class BookTable(Base):
                 f" Автор: {self.author!r}, Дата издания: {book_date}")
 
 
-async def init_db():
-    async with engine.begin() as conn:
-        # run_sync нужен, так как metadata.create_all по своей природе синхронна
-        await conn.run_sync(Base.metadata.create_all)
+def init_db():
+    Base.metadata.create_all(bind=engine)
     print("Таблицы проверены/созданы.")
