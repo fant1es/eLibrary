@@ -37,18 +37,8 @@ def seed_data():
                         "дьявола в Москву 1930-х годов и трагической любви писателя и его музы.",
                 public_date=datetime.strptime("15.01.1967", "%d.%m.%Y").date(),
                 genres=[genres["classic"], genres["drama"]],
-                cover_path="master_margarita.jpg"
-            ),
-            BookTable(
-                name="1984",
-                author="Джордж Оруэлл",
-                rating=4.8,
-                summary="Культовое произведение о тоталитарном обществе, где мысли контролируются, а история "
-                        "переписывается. История Уинстона Смита, пытающегося сохранить искру человечности в мире "
-                        "Большого Брата.",
-                public_date=datetime.strptime("08.06.1949", "%d.%m.%Y").date(),
-                genres=[genres["dystopia"], genres["scifi"]],
-                cover_path="1984.jpg"
+                cover_path="master_i_margarita.jpg",
+                file_path="master_i_margarita.pdf"
             ),
             BookTable(
                 name="Солярис",
@@ -59,7 +49,8 @@ def seed_data():
                         "исследователей.",
                 public_date=datetime.strptime("01.01.1961", "%d.%m.%Y").date(),
                 genres=[genres["scifi"], genres["drama"]],
-                cover_path="solaris.jpg"
+                cover_path="solaris.jpg",
+                file_path="solaris.pdf"
             ),
             BookTable(
                 name="Дюна",
@@ -69,7 +60,8 @@ def seed_data():
                         "Пола Атрейдеса, объединяющая политические интриги, религию, экологию и судьбу человечества.",
                 public_date=datetime.strptime("01.08.1965", "%d.%m.%Y").date(),
                 genres=[genres["scifi"], genres["fantasy"]],
-                cover_path="dune.jpg"
+                cover_path="dune.jpg",
+                file_path="dune.pdf"
             ),
             BookTable(
                 name="Сияние",
@@ -80,7 +72,8 @@ def seed_data():
                         "зависимости.",
                 public_date=datetime.strptime("28.01.1977", "%d.%m.%Y").date(),
                 genres=[genres["horror"], genres["drama"]],
-                cover_path="shining.jpg"
+                cover_path="shining.jpg",
+                file_path="shining.pdf"
             ),
             BookTable(
                 name="Sapiens: Краткая история человечества",
@@ -90,7 +83,8 @@ def seed_data():
                         "биология и история определили нас и наше общество.",
                 public_date=datetime.strptime("04.09.2011", "%d.%m.%Y").date(),
                 genres=[genres["nonfiction"]],
-                cover_path="sapiens.jpg"
+                cover_path="sapiens.jpg",
+                file_path="sapiens.pdf"
             ),
             BookTable(
                 name="Выразительный JavaScript",
@@ -100,7 +94,8 @@ def seed_data():
                         "синтаксиса, так и продвинутые темы, включая асинхронность и функциональное программирование.",
                 public_date=datetime.strptime("14.12.2014", "%d.%m.%Y").date(),
                 genres=[genres["prog"]],
-                cover_path="javascript.jpg"
+                cover_path="javascript.jpg",
+                file_path="javascript.pdf"
             ),
             BookTable(
                 name="О дивный новый мир",
@@ -110,7 +105,8 @@ def seed_data():
                         "эмоции на стабильность и наркотическое счастье.",
                 public_date=datetime.strptime("01.01.1932", "%d.%m.%Y").date(),
                 genres=[genres["dystopia"]],
-                cover_path="brave_new_world.jpg"
+                cover_path="brave_new_world.jpg",
+                file_path="brave_new_world.pdf"
             ),
             BookTable(
                 name="Тонкое искусство пофигизма",
@@ -120,7 +116,8 @@ def seed_data():
                         "выбирать, на что тратить свои нервы, и как смириться с неудачами.",
                 public_date=datetime.strptime("13.09.2016", "%d.%m.%Y").date(),
                 genres=[genres["psychology"], genres["nonfiction"]],
-                cover_path="subtle_art.jpg"
+                cover_path="subtle_art.jpg",
+                file_path="subtle_art.pdf"
             ),
             BookTable(
                 name="Автостопом по Галактике",
@@ -130,7 +127,8 @@ def seed_data():
                         "уничтожения. Помните: главное — не паниковать и иметь при себе полотенце.",
                 public_date=datetime.strptime("12.10.1979", "%d.%m.%Y").date(),
                 genres=[genres["scifi"]],
-                cover_path="hitchhiker.jpg"
+                cover_path="hitchhiker.jpg",
+                file_path="hitchhiker.pdf"
             )
         ]
 

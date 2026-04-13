@@ -1,6 +1,7 @@
 import json
 import os
 import socket
+import base64
 
 from PyQt6.QtCore import QThread, pyqtSignal
 from dotenv import load_dotenv
@@ -9,10 +10,13 @@ load_dotenv()
 
 
 class SocketWorker(QThread):
-    # Сигналы для вызова методов в UI (вызывать напрямую из потока нельзя)
+    """Сокет клиента для посылания запросов серверу"""
+
+    # Сигналы для вызова методов в UI (вызывать напрямую из потока методы нельзя)
     connected = pyqtSignal()
     disconnected = pyqtSignal()
     books_received = pyqtSignal(list)
+    file_received = pyqtSignal(str, bytes)
     error_occurred = pyqtSignal(str)
 
     HOST = os.getenv("SERVER_HOST", "127.0.0.1")
@@ -41,37 +45,56 @@ class SocketWorker(QThread):
                 if not raw_data:
                     break
 
-                json_data = json.loads(raw_data.decode())
+                # Должны получить JSON
+                try:
+                    json_data = json.loads(raw_data.decode())
+                except (UnicodeDecodeError, json.JSONDecodeError):
+                    continue
 
-                # Точная проверка после выгрузки json на список
+                # Проверка статуса и типа ответа
                 if isinstance(json_data, dict):
-                    if json_data.get("status") == "error":
-                        print(f"Сервер сообщил об ошибке: {json_data['message']}")
-                        self.error_occurred.emit(f"Ошибка:\n{json_data['message']}")
-                    elif json_data.get("status") == "success":
-                        books_list = json_data.get("data", [])
-                        self.books_received.emit(books_list)
-                # Гарантируем, что старая JSON-версия не придет
+                    status = json_data.get("status")
+                    if status == "error":
+                        self.error_occurred.emit(json_data["message"])
+
+                    elif status == "success":
+                        action = json_data.get("action", "books")
+                        if action == "books":
+                            self.books_received.emit(json_data.get("data", []))
+
+                        elif action == "download":
+                            filename = json_data["filename"]
+                            file_bytes = base64.b64decode(json_data["file_data"])
+                            self.file_received.emit(filename, file_bytes)
 
         except ConnectionRefusedError:
             self.error_occurred.emit("Сервер недоступен")
-        # Когда сокет закрывается через stop()
         except OSError:
-            pass
+            # Здесь неожиданный обрыв, а не наш stop()
+            if self._running:
+                self.error_occurred.emit("Потеряно соединение с сервером")
         finally:
             self._running = False
             self.disconnected.emit()
 
+    def request_download(self, file_path: str):
+        """Вызывается при нажатии на "Скачать книгу" из карточки"""
+        self.send(f"download|{file_path}")
+
     def _recv_exact(self, msg_len: int) -> bytes | None:
+        """Получает точное число байт"""
         buffer = bytearray()
+
         while len(buffer) < msg_len:
             chunk = self._socket.recv(msg_len - len(buffer))
             if not chunk:
                 return None
             buffer += chunk
+
         return bytes(buffer)
 
     def send(self, message: str):
+        """Вспомогательный метод для отправки данных сокетом"""
         if self._socket and self._running:
             try:
                 self._socket.sendall(message.encode())

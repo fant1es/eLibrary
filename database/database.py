@@ -22,7 +22,7 @@ engine = create_engine(DATABASE_URL, echo=False)
 SessionLocal = sessionmaker(bind=engine, expire_on_commit=False)
 
 
-# Класс для работы со всеми таблицами
+# Класс для работы со всеми таблицами в одном пространстве
 class Base(DeclarativeBase):
     pass
 
@@ -60,6 +60,7 @@ class BookTable(Base):
     rating: Mapped[float] = mapped_column(Float, nullable=False)
     cover_path: Mapped[str] = mapped_column(String(255), nullable=True)
     public_date: Mapped[date] = mapped_column(Date, nullable=False)
+    file_path: Mapped[str] = mapped_column(String(255), nullable=False)
 
     genres: Mapped[list[GenreTable]] = relationship(
         secondary=book_genre_association,

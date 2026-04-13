@@ -14,10 +14,33 @@ SERVER_HOST = os.getenv("SERVER_HOST", "127.0.0.1")
 SERVER_PORT = int(os.getenv("SERVER_PORT", 8080))
 
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-COVERS_DIR = os.path.join(BASE_DIR, os.getenv("COVERS_DIR", "covers"))
+COVERS_DIR = os.path.join(BASE_DIR, os.getenv("COVERS_DIR", "content/covers"))
+BOOKS_DIR = os.path.join(BASE_DIR, os.getenv("BOOKS_DIR", "content/books"))
+
+
+def fetch_file_json(file_path: str) -> str:
+    """Формирование JSON для передачи одной полноценной книги"""
+    full_path = os.path.join(BOOKS_DIR, file_path)
+
+    if not os.path.exists(full_path):
+        return json.dumps({
+            "status": "error",
+            "message": f"Файл '{file_path}' не найден на сервере"
+        }, ensure_ascii=False)
+
+    with open(full_path, "rb") as f:
+        encoded = base64.b64encode(f.read()).decode()
+
+    return json.dumps({
+        "status": "success",
+        "action": "download",
+        "filename": os.path.basename(file_path),
+        "file_data": encoded
+    }, ensure_ascii=False)
 
 
 def fetch_books_json() -> str:
+    """Формирование JSON для передачи информации о всех книгах для карточек"""
     try:
         with SessionLocal() as session:
             books = get_books(session)
@@ -33,9 +56,9 @@ def fetch_books_json() -> str:
                         "public_date": p_date,
                         "rating": b.rating,
                         "genres": [g.name for g in b.genres],
-                        # Возможный NULL в книге
                         "summary": b.summary or "",
                         "cover_pic": encode_cover(b.cover_path),
+                        "file_path": b.file_path
                     })
                 except Exception as e:
                     print(f"Ошибка при обработке книги {getattr(b, 'id', 'unknown')}: {e}")
@@ -44,6 +67,7 @@ def fetch_books_json() -> str:
 
         return json.dumps({
             "status": "success",
+            "action": "books",
             "data": result
         }, ensure_ascii=False)
 
@@ -56,10 +80,11 @@ def fetch_books_json() -> str:
         }, ensure_ascii=False)
 
 
-# Перевод изображения в строку для обложки в карточку
 def encode_cover(path: str | None) -> str | None:
+    """Перевод изображения в строку для обложки в карточку"""
     if not path:
         return None
+
     full_path = os.path.join(COVERS_DIR, path)
     if not os.path.exists(full_path):
         return None
@@ -68,7 +93,8 @@ def encode_cover(path: str | None) -> str | None:
         return base64.b64encode(f.read()).decode()
 
 
-def handle_client(client, address):
+# Цикл работы с клиентом
+def handle_client(client: socket.socket, address):
     print(f"[+] Подключился новый клиент: {address}")
     with client:
         while True:
@@ -80,14 +106,17 @@ def handle_client(client, address):
                 message = data.decode().strip()
                 print(f"[{address}] Получено: {message}")
 
+                # Обработка типа запроса
                 if message == "get_books":
-                    books_json = fetch_books_json()
-                    # Отправляем длину сообщения перед данными
-                    encoded = books_json.encode()
-                    client.sendall(len(encoded).to_bytes(4, "big") + encoded)
+                    response = fetch_books_json()
+                elif message.startswith("download|"):
+                    file_path = message.split("|", 1)[1].strip()
+                    response = fetch_file_json(file_path)
                 else:
-                    encoded = b"unknown command"
-                    client.sendall(len(encoded).to_bytes(4, "big") + encoded)
+                    response = json.dumps({"status": "error", "message": "unknown command"})
+
+                encoded = response.encode()
+                client.sendall(len(encoded).to_bytes(4, "big") + encoded)
 
             except OSError as e:
                 print(f"[{address}] Разрыв соединения: {e}")

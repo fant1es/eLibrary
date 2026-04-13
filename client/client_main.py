@@ -25,6 +25,7 @@ class Client(QtWidgets.QMainWindow, clientWindow.Ui_MainWindow):
         self.socket_worker.disconnected.connect(lambda: print("Отключение от сервера."))
         self.socket_worker.error_occurred.connect(self.show_error)
         self.socket_worker.books_received.connect(self.on_books_received)
+        self.socket_worker.file_received.connect(self.save_file)
 
         self.socket_worker.start()
 
@@ -41,13 +42,13 @@ class Client(QtWidgets.QMainWindow, clientWindow.Ui_MainWindow):
         self.range_delegate = RangeDelegate()
         self.filter_tree.setItemDelegate(self.range_delegate)
 
-        print(self.scrollAreaWidgetContents.children())
 
         # --- Привязка событий под кнопки и триггеры ------------
         self.exit_btn.clicked.connect(self.exit)
         self.exit_action.triggered.connect(self.exit)
 
     def on_books_received(self, books: list[dict]):
+        # В layout прокрутка со всеми карточками книг
         layout = self.scrollAreaWidgetContents.layout() or QVBoxLayout(self.scrollAreaWidgetContents)
 
         # Для обновления корректно удалить все карточки
@@ -57,6 +58,7 @@ class Client(QtWidgets.QMainWindow, clientWindow.Ui_MainWindow):
                 child.widget().deleteLater()
 
         for book in books:
+            # Отдельно декодируем обложку
             cover_b64 = book.get("cover_pic")
             if cover_b64:
                 pixmap = QPixmap()
@@ -71,10 +73,18 @@ class Client(QtWidgets.QMainWindow, clientWindow.Ui_MainWindow):
                 rating=book["rating"],
                 genres=book["genres"],
                 summary=book["summary"],
+                file_path=book["file_path"],
                 pixmap=pixmap,
             )
+            book_card.download_requested.connect(self.socket_worker.request_download)
 
             layout.addWidget(book_card)
+
+    def save_file(self, filename: str, data: bytes):
+        path, _ = QtWidgets.QFileDialog.getSaveFileName(self, "Сохранить книгу", filename)
+        if path:
+            with open(path, "wb") as f:
+                f.write(data)
 
     def show_error(self, message):
         msg = QMessageBox(self)
@@ -91,6 +101,8 @@ class Client(QtWidgets.QMainWindow, clientWindow.Ui_MainWindow):
 
 
 def setup_filter_tree():
+    """Динамически ставим фильтры"""
+
     model = QStandardItemModel()
     model.setHorizontalHeaderLabels(["Фильтры"])
 

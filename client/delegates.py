@@ -2,8 +2,9 @@ from PyQt6.QtWidgets import QStyledItemDelegate, QDoubleSpinBox, QWidget, QHBoxL
 from PyQt6.QtCore import Qt
 
 
-# Вспомогательный метод для создания спин боксов
 def _setup_spin(parent, min_val, max_val, step, decimals):
+    """Вспомогательный метод для создания спин боксов"""
+
     spin = QDoubleSpinBox(parent)
     spin.setRange(min_val, max_val)
     spin.setSingleStep(step)
@@ -14,6 +15,8 @@ def _setup_spin(parent, min_val, max_val, step, decimals):
 
 
 class RangeDelegate(QStyledItemDelegate):
+    """Делегат для установки спинбоксов рейтинга и даты издания"""
+
     RoleTag = Qt.ItemDataRole.UserRole + 1
     RoleMin = Qt.ItemDataRole.UserRole + 2
     RoleMax = Qt.ItemDataRole.UserRole + 3
@@ -52,7 +55,7 @@ class RangeDelegate(QStyledItemDelegate):
     def setEditorData(self, editor, index):
         text = index.data(Qt.ItemDataRole.EditRole)
         try:
-            # Вырезаем цифры из строки "Рейтинг: 1-5" -> "1-5"
+            # Вырезаем цифры из строки "Рейтинг: 1-5" - "1-5"
             clean_text = text.split(":")[-1].strip()
             start, end = clean_text.split("-")
             editor.spin_from.setValue(float(start))
@@ -70,8 +73,9 @@ class RangeDelegate(QStyledItemDelegate):
 
         fmt = lambda v: str(int(v)) if v == int(v) else str(round(v, 1))
 
-        # Сохраняем в модель итоговую строку
-        result = f"{name}: {fmt(val_from)}-{fmt(val_to)} {'★' * (name == 'Рейтинг') }"
+        # Сохраняем в модель итоговую строку c учетом типа делегата
+        star = " ★" if name == "Рейтинг" else ""
+        result = f"{name}: {fmt(val_from)}-{fmt(val_to)}{star}"
         model.setData(index, result, Qt.ItemDataRole.EditRole)
 
     def updateEditorGeometry(self, editor, option, index):
