@@ -1,5 +1,7 @@
 import json
-import socket, os
+import os
+import socket
+
 from PyQt6.QtCore import QThread, pyqtSignal
 from dotenv import load_dotenv
 
@@ -40,9 +42,16 @@ class SocketWorker(QThread):
                     break
 
                 json_data = json.loads(raw_data.decode())
+
                 # Точная проверка после выгрузки json на список
-                if isinstance(json_data, list):
-                    self.books_received.emit(json_data)
+                if isinstance(json_data, dict):
+                    if json_data.get("status") == "error":
+                        print(f"Сервер сообщил об ошибке: {json_data['message']}")
+                        self.error_occurred.emit(f"Ошибка:\n{json_data['message']}")
+                    elif json_data.get("status") == "success":
+                        books_list = json_data.get("data", [])
+                        self.books_received.emit(books_list)
+                # Гарантируем, что старая JSON-версия не придет
 
         except ConnectionRefusedError:
             self.error_occurred.emit("Сервер недоступен")

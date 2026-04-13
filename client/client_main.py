@@ -2,7 +2,7 @@ from datetime import datetime
 import base64
 from PyQt6.QtGui import QStandardItemModel, QStandardItem, QPixmap
 from PyQt6 import QtWidgets
-from PyQt6.QtWidgets import QVBoxLayout
+from PyQt6.QtWidgets import QVBoxLayout, QMessageBox
 from PyQt6.QtCore import QByteArray
 
 # from rapidfuzz import process, fuzz
@@ -23,6 +23,7 @@ class Client(QtWidgets.QMainWindow, clientWindow.Ui_MainWindow):
         self.socket_worker.connected.connect(lambda: print("Успешное подключение!"))
         self.socket_worker.connected.connect(lambda: self.socket_worker.send("get_books"))
         self.socket_worker.disconnected.connect(lambda: print("Отключение от сервера."))
+        self.socket_worker.error_occurred.connect(self.show_error)
         self.socket_worker.books_received.connect(self.on_books_received)
 
         self.socket_worker.start()
@@ -49,15 +50,19 @@ class Client(QtWidgets.QMainWindow, clientWindow.Ui_MainWindow):
     def on_books_received(self, books: list[dict]):
         layout = self.scrollAreaWidgetContents.layout() or QVBoxLayout(self.scrollAreaWidgetContents)
 
+        # Для обновления корректно удалить все карточки
+        while layout.count():
+            child = layout.takeAt(0)
+            if child.widget():
+                child.widget().deleteLater()
+
         for book in books:
             cover_b64 = book.get("cover_pic")
             if cover_b64:
                 pixmap = QPixmap()
                 pixmap.loadFromData(QByteArray(base64.b64decode(cover_b64)))
-                print('check')
             else:
                 pixmap = QPixmap()  # заглушка
-                print("bad")
 
             book_card = BookCard(
                 name=book["name"],
@@ -68,8 +73,16 @@ class Client(QtWidgets.QMainWindow, clientWindow.Ui_MainWindow):
                 summary=book["summary"],
                 pixmap=pixmap,
             )
+
             layout.addWidget(book_card)
 
+    def show_error(self, message):
+        msg = QMessageBox(self)
+        msg.setIcon(QMessageBox.Icon.Critical)  # Красный крестик
+        msg.setWindowTitle("Ошибка")
+        msg.setText(message)
+        msg.setStandardButtons(QMessageBox.StandardButton.Ok)
+        msg.exec()
 
     def exit(self):
         self.socket_worker.stop()

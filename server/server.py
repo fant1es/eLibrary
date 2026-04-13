@@ -1,10 +1,13 @@
-import os, json, base64
-from dotenv import load_dotenv
+import base64
+import json
+import os
 import socket
 from threading import Thread
 
-from database.database import SessionLocal, init_db
+from dotenv import load_dotenv
+
 from database.crud import get_books
+from database.database import SessionLocal, init_db
 
 load_dotenv()
 SERVER_HOST = os.getenv("SERVER_HOST", "127.0.0.1")
@@ -15,21 +18,42 @@ COVERS_DIR = os.path.join(BASE_DIR, os.getenv("COVERS_DIR", "covers"))
 
 
 def fetch_books_json() -> str:
-    with SessionLocal() as session:
-        books = get_books(session)
-        result = [
-            {
-                "name": b.name,
-                "author": b.author,
-                "public_date": b.public_date.strftime("%d.%m.%Y"),
-                "rating": b.rating,
-                "genres": [g.name for g in b.genres],
-                "summary": b.summary,
-                "cover_pic": encode_cover(b.cover_path),
-            }
-            for b in books
-        ]
-        return json.dumps(result, ensure_ascii=False)
+    try:
+        with SessionLocal() as session:
+            books = get_books(session)
+            result = []
+            for b in books:
+                try:
+                    # Формируем дату безопасно
+                    p_date = b.public_date.strftime("%d.%m.%Y") if b.public_date else "Дата неизвестна"
+
+                    result.append({
+                        "name": b.name,
+                        "author": b.author,
+                        "public_date": p_date,
+                        "rating": b.rating,
+                        "genres": [g.name for g in b.genres],
+                        # Возможный NULL в книге
+                        "summary": b.summary or "",
+                        "cover_pic": encode_cover(b.cover_path),
+                    })
+                except Exception as e:
+                    print(f"Ошибка при обработке книги {getattr(b, 'id', 'unknown')}: {e}")
+                    # Проблемную книгу пропускаем, отдаем следующие
+                    continue
+
+        return json.dumps({
+            "status": "success",
+            "data": result
+        }, ensure_ascii=False)
+
+    # Если упала база или весь процесс
+    except Exception as e:
+        print(f"[Критическая ошибка сервера] {e}")
+        return json.dumps({
+            "status": "error",
+            "message": "Ошибка на стороне сервера при получении списка книг"
+        }, ensure_ascii=False)
 
 
 # Перевод изображения в строку для обложки в карточку
@@ -39,7 +63,7 @@ def encode_cover(path: str | None) -> str | None:
     full_path = os.path.join(COVERS_DIR, path)
     if not os.path.exists(full_path):
         return None
-    
+
     with open(full_path, "rb") as f:
         return base64.b64encode(f.read()).decode()
 
@@ -53,7 +77,7 @@ def handle_client(client, address):
                 if not data:
                     break
 
-                message = data.decode()
+                message = data.decode().strip()
                 print(f"[{address}] Получено: {message}")
 
                 if message == "get_books":
