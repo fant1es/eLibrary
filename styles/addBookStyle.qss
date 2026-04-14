@@ -1,23 +1,23 @@
 #addBookWidget {
     background-color: #F8FBF8;
     font-family: "Segoe UI", Arial, sans-serif;
-    font-size: 12px; /* Уменьшено для экономии места */
+    font-size: 12px;
     color: #333333;
 }
 
 /* Общий стиль для надписей */
 QLabel {
     color: #333333;
-    font-size: 12px; /* Уменьшено */
+    font-size: 12px;
     background-color: transparent;
 }
 
 /* Заголовок "Добавление книги" */
 #label {
-    font-size: 16px; /* Уменьшено для освобождения пространства */
+    font-size: 16px;
     font-weight: bold;
     color: #2e7d32;
-    padding: 5px; /* Уменьшенный отступ */
+    padding: 5px;
 }
 
 /* ==============================================
@@ -27,13 +27,13 @@ QLineEdit, QTextEdit {
     background-color: #ffffff;
     border: 1px solid #cccccc;
     border-radius: 4px;
-    padding: 3px 5px; /* Более компактные отступы */
+    padding: 3px 5px;
     color: #333333;
     font-size: 12px;
 }
 
 QLineEdit {
-    max-height: 22px; /* Ограничение высоты однострочных полей */
+    max-height: 22px;
 }
 
 QLineEdit:focus, QTextEdit:focus {
@@ -48,8 +48,8 @@ QPushButton {
     background-color: #4CAF50;
     color: white;
     border: none;
-    border-radius: 5px; /* Чуть уменьшенный радиус */
-    padding: 5px 12px; /* Уменьшенные отступы для компактности */
+    border-radius: 5px;
+    padding: 5px 12px;
     font-weight: bold;
     font-size: 12px;
 }
@@ -83,7 +83,7 @@ QListWidget {
 }
 
 QListWidget::item {
-    padding: 3px; /* Более плотное расположение элементов */
+    padding: 3px;
     border-bottom: 1px solid #f0f0f0;
 }
 
@@ -98,7 +98,7 @@ QListWidget::item:selected {
 QCalendarWidget QWidget {
     background-color: #ffffff;
     alternate-background-color: #f9fdf9;
-    font-size: 11px; /* Компактный шрифт для сетки */
+    font-size: 11px;
 }
 
 QCalendarWidget QWidget#qt_calendar_navigationbar {
@@ -112,7 +112,7 @@ QCalendarWidget QToolButton {
     border: none;
     border-radius: 4px;
     background-color: transparent;
-    padding: 2px; /* Уменьшенный отступ кнопок */
+    padding: 2px;
     margin: 1px;
     font-size: 11px;
 }
@@ -124,7 +124,7 @@ QCalendarWidget QToolButton:hover {
 QCalendarWidget QToolButton#qt_calendar_prevmonth,
 QCalendarWidget QToolButton#qt_calendar_nextmonth {
     background-color: transparent;
-    width: 25px; /* Суженная ширина кнопок навигации */
+    width: 25px;
 }
 
 QCalendarWidget QToolButton::menu-indicator {
@@ -139,8 +139,22 @@ QCalendarWidget QAbstractItemView:enabled {
     outline: none;
 }
 
-QCalendarWidget QAbstractItemView:disabled {
-    color: #cccccc;
+/* Добавляем :!selected, чтобы наведение работало ТОЛЬКО для невыбранных дат */
+QCalendarWidget QAbstractItemView::item:hover:!selected {
+    background-color: #e8f5e9;
+    color: #333333;
+}
+
+QCalendarWidget QAbstractItemView::item:selected {
+    background-color: #4CAF50 !important;
+    color: white !important;
+    border-radius: 4px;
+}
+
+/* На всякий случай: выделение, когда мы навели на уже выбранную дату */
+QCalendarWidget QAbstractItemView::item:selected:hover {
+    background-color: #3e8e41; /* Чуть темнее, чтобы был отклик на мышь */
+    color: white;
 }
 
 /* ==============================================
