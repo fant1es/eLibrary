@@ -1,4 +1,5 @@
 import base64
+from datetime import datetime
 import json
 import os
 import socket
@@ -6,8 +7,10 @@ from threading import Thread
 
 from dotenv import load_dotenv
 
-from database.crud import get_books, get_genres, add_genre, delete_genres
+from database.crud import get_genres, get_genre, add_genre, delete_genres
+from database.crud import get_books, add_book
 from database.database import SessionLocal, init_db
+from database.database import GenreTable, BookTable
 
 load_dotenv()
 SERVER_HOST = os.getenv("SERVER_HOST", "127.0.0.1")
@@ -173,6 +176,46 @@ def handle_client(client: socket.socket, address):
                     with SessionLocal() as session:
                         delete_genres(session, genre_ids)
                     response = fetch_genres_json()
+
+                elif message.startswith("add_book|"):
+                    try:
+                        payload = json.loads(message.split("|", 1)[1])
+
+                        # Сохраняем файл книги
+                        book_filename = payload["book_filename"]
+                        with open(os.path.join(BOOKS_DIR, book_filename), "wb") as f:
+                            f.write(base64.b64decode(payload["book_data"]))
+
+                        # Сохраняем обложку (опционально)
+                        cover_filename = None
+                        if payload.get("cover_data") and payload.get("cover_filename"):
+                            cover_filename = payload["cover_filename"]
+                            with open(os.path.join(COVERS_DIR, cover_filename), "wb") as f:
+                                f.write(base64.b64decode(payload["cover_data"]))
+
+                        # Добавляем книгу в базу данных
+                        with SessionLocal() as session:
+                            genres = [get_genre(session, gid) for gid in payload.get("genre_ids", [])]
+                            genres = [g for g in genres if g]
+
+                            book = BookTable(
+                                name=payload["name"],
+                                author=payload["author"],
+                                summary=payload["summary"],
+                                rating=payload["rating"],
+                                public_date=datetime.strptime(payload["public_date"], "%d.%m.%Y").date(),
+                                genres=genres,
+                                file_path=book_filename,
+                                cover_path=cover_filename,
+                            )
+                            add_book(session, book)
+
+                        response = fetch_books_json()
+
+                    except Exception as e:
+                        print(f"[Ошибка добавления книги] {e}")
+                        response = json.dumps({"status": "error", "message": f"Ошибка при добавлении книги: {e}"},
+                                              ensure_ascii=False)
 
                 else:
                     response = json.dumps({"status": "error", "message": "unknown command"})

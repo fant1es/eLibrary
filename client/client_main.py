@@ -26,13 +26,18 @@ class Client(QtWidgets.QMainWindow, clientWindow.Ui_MainWindow):
         self.add_book_btn.clicked.connect(self.add_book_print)
         self.add_book_window = AddBookWin()
 
+        self.add_book_window.book_add_requested.connect(
+            lambda payload: self.socket_worker.send(f"add_book|{payload}")
+        )
+
         self.add_book_window.genre_add_requested.connect(
             lambda name: self.socket_worker.send(f"add_genre|{name}")
         )
-        # Удаление циклом по всем переданным ID
+        # Удаление по всем переданным ID через запятую
         self.add_book_window.genre_delete_requested.connect(
             lambda ids: self.socket_worker.send(f"delete_genres|{','.join(map(str, ids))}")
         )
+
 
         # --- Установка потока с сокетом -----------------------
         self.socket_worker = SocketWorker()
@@ -79,6 +84,7 @@ class Client(QtWidgets.QMainWindow, clientWindow.Ui_MainWindow):
             self.add_book_window.set_genres(self.all_genres)
             self.add_book_window.show()
 
+    # --- Работа с жанрами --------------------------------------
     def on_genres_received(self, genres: list[dict]):
         self.all_genres = genres.copy()
         # Обновляем виджет, если окно открыто

@@ -12,11 +12,20 @@ def get_books(db: Session) -> list[BookTable]:
                 )
 
 
+def add_book(db: Session, new_book: BookTable):
+    db.add(new_book)
+    db.commit()
+
+
 def get_genres(db: Session) -> list[GenreTable]:
     return list(db.scalars(select(GenreTable).
                 order_by(GenreTable.id)).
                 all()
                 )
+
+
+def get_genre(db: Session, genre_id: int):
+    return db.get(GenreTable, genre_id)
 
 
 def add_genre(db: Session, genre_name: str):
@@ -31,3 +40,4 @@ def delete_genres(db: Session, genre_ids: list[int]):
         if genre:
             db.delete(genre)
     db.commit()
+
