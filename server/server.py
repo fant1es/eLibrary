@@ -6,7 +6,7 @@ from threading import Thread
 
 from dotenv import load_dotenv
 
-from database.crud import get_books
+from database.crud import get_books, get_genres
 from database.database import SessionLocal, init_db
 
 load_dotenv()
@@ -77,6 +77,32 @@ def fetch_books_json() -> str:
         return json.dumps({
             "status": "error",
             "message": "Ошибка на стороне сервера при получении списка книг"
+        }, ensure_ascii=False)
+
+
+def fetch_genres_json() -> str:
+    """Формирование JSON для передачи информации о всех жанрах для фильтров"""
+
+    try:
+        with SessionLocal() as session:
+            genres = get_genres(session)
+
+            result = [
+                {"id": genre.id, "name": genre.name}
+                for genre in genres
+            ]
+
+        return json.dumps({
+            "status": "success",
+            "action": "genres",
+            "data": result
+        }, ensure_ascii=False)
+
+    except Exception as e:
+        print(f"[Критическая ошибка сервера] {e}")
+        return json.dumps({
+            "status": "error",
+            "message": "Ошибка на стороне сервера при получении списка жанров"
         }, ensure_ascii=False)
 
 
