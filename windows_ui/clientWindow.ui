@@ -39,6 +39,27 @@
          </property>
         </widget>
        </item>
+       <item>
+        <widget class="QPushButton" name="add_book_btn">
+         <property name="text">
+          <string>Добавить книгу</string>
+         </property>
+        </widget>
+       </item>
+       <item>
+        <widget class="QPushButton" name="del_book_btn">
+         <property name="text">
+          <string>Удалить книгу</string>
+         </property>
+        </widget>
+       </item>
+       <item>
+        <widget class="QPushButton" name="edit_book_btn">
+         <property name="text">
+          <string>Изменить книгу</string>
+         </property>
+        </widget>
+       </item>
       </layout>
      </widget>
     </item>

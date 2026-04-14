@@ -10,6 +10,7 @@ from PyQt6.QtCore import QByteArray
 from classes.classes import BookCard
 from client.delegates import RangeDelegate
 from windows import clientWindow
+from windows.window_classes import AddBookWin
 from client.socket_worker import SocketWorker
 
 
@@ -17,6 +18,9 @@ class Client(QtWidgets.QMainWindow, clientWindow.Ui_MainWindow):
     def __init__(self):
         super().__init__()
         self.setupUi(self)
+
+        self.add_book_btn.clicked.connect(self.add_book_print)
+        self.add_book_window = AddBookWin()
 
         # --- Установка потока с сокетом -----------------------
         self.socket_worker = SocketWorker()
@@ -47,6 +51,17 @@ class Client(QtWidgets.QMainWindow, clientWindow.Ui_MainWindow):
         self.exit_btn.clicked.connect(self.exit)
         self.exit_action.triggered.connect(self.exit)
 
+    def add_book_print(self):
+        if self.add_book_window.isHidden():
+            try:
+                with open("styles/addBookStyle.qss", "r", encoding="utf-8") as file:
+                    self.add_book_window.setStyleSheet(file.read())
+            except FileNotFoundError:
+                print("Файл стилей не найден.")
+
+            self.add_book_window.show()
+
+    # --- Работа с книгами --------------------------------------
     def on_books_received(self, books: list[dict]):
         # В layout прокрутка со всеми карточками книг
         layout = self.scrollAreaWidgetContents.layout() or QVBoxLayout(self.scrollAreaWidgetContents)

@@ -1,0 +1,164 @@
+#addBookWidget {
+    background-color: #F8FBF8;
+    font-family: "Segoe UI", Arial, sans-serif;
+    font-size: 12px; /* Уменьшено для экономии места */
+    color: #333333;
+}
+
+/* Общий стиль для надписей */
+QLabel {
+    color: #333333;
+    font-size: 12px; /* Уменьшено */
+    background-color: transparent;
+}
+
+/* Заголовок "Добавление книги" */
+#label {
+    font-size: 16px; /* Уменьшено для освобождения пространства */
+    font-weight: bold;
+    color: #2e7d32;
+    padding: 5px; /* Уменьшенный отступ */
+}
+
+/* ==============================================
+   Поля ввода (QLineEdit и QTextEdit)
+   ============================================== */
+QLineEdit, QTextEdit {
+    background-color: #ffffff;
+    border: 1px solid #cccccc;
+    border-radius: 4px;
+    padding: 3px 5px; /* Более компактные отступы */
+    color: #333333;
+    font-size: 12px;
+}
+
+QLineEdit {
+    max-height: 22px; /* Ограничение высоты однострочных полей */
+}
+
+QLineEdit:focus, QTextEdit:focus {
+    border: 1px solid #4CAF50;
+    background-color: #f1faf1;
+}
+
+/* ==============================================
+   Кнопки (QPushButton)
+   ============================================== */
+QPushButton {
+    background-color: #4CAF50;
+    color: white;
+    border: none;
+    border-radius: 5px; /* Чуть уменьшенный радиус */
+    padding: 5px 12px; /* Уменьшенные отступы для компактности */
+    font-weight: bold;
+    font-size: 12px;
+}
+
+QPushButton:hover {
+    background-color: #45a049;
+}
+
+QPushButton:pressed {
+    background-color: #3e8e41;
+}
+
+#cancel_btn {
+    background-color: #a5d6a7;
+    color: #2e7d32;
+}
+
+#cancel_btn:hover {
+    background-color: #81c784;
+}
+
+/* ==============================================
+   Список жанров (QListWidget)
+   ============================================== */
+QListWidget {
+    background-color: #ffffff;
+    border: 1px solid #e0e0e0;
+    border-radius: 6px;
+    outline: none;
+    font-size: 12px;
+}
+
+QListWidget::item {
+    padding: 3px; /* Более плотное расположение элементов */
+    border-bottom: 1px solid #f0f0f0;
+}
+
+QListWidget::item:selected {
+    background-color: #c8e6c9;
+    color: #000000;
+}
+
+/* ==============================================
+   Календарь (QCalendarWidget)
+   ============================================== */
+QCalendarWidget QWidget {
+    background-color: #ffffff;
+    alternate-background-color: #f9fdf9;
+    font-size: 11px; /* Компактный шрифт для сетки */
+}
+
+QCalendarWidget QWidget#qt_calendar_navigationbar {
+    background-color: #e8f5e9;
+    border-bottom: 2px solid #4CAF50;
+}
+
+QCalendarWidget QToolButton {
+    color: #2e7d32;
+    font-weight: bold;
+    border: none;
+    border-radius: 4px;
+    background-color: transparent;
+    padding: 2px; /* Уменьшенный отступ кнопок */
+    margin: 1px;
+    font-size: 11px;
+}
+
+QCalendarWidget QToolButton:hover {
+    background-color: #c8e6c9;
+}
+
+QCalendarWidget QToolButton#qt_calendar_prevmonth,
+QCalendarWidget QToolButton#qt_calendar_nextmonth {
+    background-color: transparent;
+    width: 25px; /* Суженная ширина кнопок навигации */
+}
+
+QCalendarWidget QToolButton::menu-indicator {
+    image: none;
+}
+
+QCalendarWidget QAbstractItemView:enabled {
+    background-color: #ffffff;
+    color: #333333;
+    selection-background-color: #4CAF50;
+    selection-color: white;
+    outline: none;
+}
+
+QCalendarWidget QAbstractItemView:disabled {
+    color: #cccccc;
+}
+
+/* ==============================================
+   Скроллбар в описании (QScrollBar)
+   ============================================== */
+QScrollBar:vertical {
+    border: none;
+    background: #f0f0f0;
+    width: 8px;
+    border-radius: 4px;
+}
+
+QScrollBar::handle:vertical {
+    background: #a5d6a7;
+    border-radius: 4px;
+    min-height: 20px;
+}
+
+QScrollBar::handle:vertical:hover {
+    background: #4CAF50;
+}
