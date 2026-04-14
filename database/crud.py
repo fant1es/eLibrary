@@ -17,3 +17,17 @@ def get_genres(db: Session) -> list[GenreTable]:
                 order_by(GenreTable.id)).
                 all()
                 )
+
+
+def add_genre(db: Session, genre_name: str):
+    new_genre = GenreTable(name=genre_name)
+    db.add(new_genre)
+    db.commit()
+
+
+def delete_genres(db: Session, genre_ids: list[int]):
+    for genre_id in genre_ids:
+        genre = db.get(GenreTable, genre_id)
+        if genre:
+            db.delete(genre)
+    db.commit()

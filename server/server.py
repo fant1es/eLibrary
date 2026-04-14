@@ -6,7 +6,7 @@ from threading import Thread
 
 from dotenv import load_dotenv
 
-from database.crud import get_books, get_genres
+from database.crud import get_books, get_genres, add_genre, delete_genres
 from database.database import SessionLocal, init_db
 
 load_dotenv()
@@ -157,9 +157,23 @@ def handle_client(client: socket.socket, address):
                     response = fetch_books_json()
                 elif message == "get_genres":
                     response = fetch_genres_json()
+
                 elif message.startswith("download|"):
                     file_path = message.split("|", 1)[1].strip()
                     response = fetch_file_json(file_path)
+
+                elif message.startswith("add_genre|"):
+                    genre_name = message.split("|", 1)[1]
+                    with SessionLocal() as session:
+                        add_genre(session, genre_name)
+                    response = fetch_genres_json()
+
+                elif message.startswith("delete_genres|"):
+                    genre_ids = [int(gid) for gid in message.split("|", 1)[1].split(",")]
+                    with SessionLocal() as session:
+                        delete_genres(session, genre_ids)
+                    response = fetch_genres_json()
+
                 else:
                     response = json.dumps({"status": "error", "message": "unknown command"})
 
