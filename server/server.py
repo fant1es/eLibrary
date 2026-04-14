@@ -51,6 +51,7 @@ def fetch_books_json() -> str:
                     p_date = b.public_date.strftime("%d.%m.%Y") if b.public_date else "Дата неизвестна"
 
                     result.append({
+                        "id": b.id,
                         "name": b.name,
                         "author": b.author,
                         "public_date": p_date,
@@ -119,22 +120,43 @@ def encode_cover(path: str | None) -> str | None:
         return base64.b64encode(f.read()).decode()
 
 
-# Цикл работы с клиентом
+def recv_exact(sock: socket.socket, msg_len: int) -> bytes | None:
+    """Получает точное число байт из сокета"""
+    buffer = bytearray()
+    while len(buffer) < msg_len:
+        chunk = sock.recv(msg_len - len(buffer))
+        if not chunk:
+            return None
+        buffer += chunk
+    return bytes(buffer)
+
+
 def handle_client(client: socket.socket, address):
+    """Цикл работы с клиентом"""
     print(f"[+] Подключился новый клиент: {address}")
     with client:
         while True:
             try:
-                data = client.recv(4096)
-                if not data:
+                # Читаем 4 байта — длина следующего сообщения от клиента
+                raw_len = recv_exact(client, 4)
+                if not raw_len:
                     break
 
-                message = data.decode().strip()
+                message_len = int.from_bytes(raw_len, "big")
+
+                # Читаем саму команду
+                raw_data = recv_exact(client, message_len)
+                if not raw_data:
+                    break
+
+                message = raw_data.decode().strip()
                 print(f"[{address}] Получено: {message}")
 
                 # Обработка типа запроса
                 if message == "get_books":
                     response = fetch_books_json()
+                elif message == "get_genres":
+                    response = fetch_genres_json()
                 elif message.startswith("download|"):
                     file_path = message.split("|", 1)[1].strip()
                     response = fetch_file_json(file_path)

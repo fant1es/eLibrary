@@ -19,16 +19,24 @@ class Client(QtWidgets.QMainWindow, clientWindow.Ui_MainWindow):
         super().__init__()
         self.setupUi(self)
 
+        self.all_books = []
+        self.all_genres = []
+
+        # --- Окна администратора ------------------------------
         self.add_book_btn.clicked.connect(self.add_book_print)
         self.add_book_window = AddBookWin()
 
         # --- Установка потока с сокетом -----------------------
         self.socket_worker = SocketWorker()
+
         self.socket_worker.connected.connect(lambda: print("Успешное подключение!"))
         self.socket_worker.connected.connect(lambda: self.socket_worker.send("get_books"))
+        self.socket_worker.connected.connect(lambda: self.socket_worker.send("get_genres"))
         self.socket_worker.disconnected.connect(lambda: print("Отключение от сервера."))
+
         self.socket_worker.error_occurred.connect(self.show_error)
         self.socket_worker.books_received.connect(self.on_books_received)
+        self.socket_worker.genres_received.connect(self.on_genres_received)
         self.socket_worker.file_received.connect(self.save_file)
 
         self.socket_worker.start()
@@ -61,8 +69,13 @@ class Client(QtWidgets.QMainWindow, clientWindow.Ui_MainWindow):
 
             self.add_book_window.show()
 
+    def on_genres_received(self, genres: list[dict]):
+        self.all_genres = genres.copy()
+
     # --- Работа с книгами --------------------------------------
     def on_books_received(self, books: list[dict]):
+        self.all_books = books.copy()
+
         # В layout прокрутка со всеми карточками книг
         layout = self.scrollAreaWidgetContents.layout() or QVBoxLayout(self.scrollAreaWidgetContents)
 

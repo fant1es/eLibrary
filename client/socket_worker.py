@@ -15,8 +15,11 @@ class SocketWorker(QThread):
     # Сигналы для вызова методов в UI (вызывать напрямую из потока методы нельзя)
     connected = pyqtSignal()
     disconnected = pyqtSignal()
+
     books_received = pyqtSignal(list)
+    genres_received = pyqtSignal(list)
     file_received = pyqtSignal(str, bytes)
+
     error_occurred = pyqtSignal(str)
 
     HOST = os.getenv("SERVER_HOST", "127.0.0.1")
@@ -61,7 +64,8 @@ class SocketWorker(QThread):
                         action = json_data.get("action", "books")
                         if action == "books":
                             self.books_received.emit(json_data.get("data", []))
-
+                        elif action == "genres":
+                            self.genres_received.emit(json_data.get("data", []))
                         elif action == "download":
                             filename = json_data["filename"]
                             file_bytes = base64.b64decode(json_data["file_data"])
@@ -97,7 +101,9 @@ class SocketWorker(QThread):
         """Вспомогательный метод для отправки данных сокетом"""
         if self._socket and self._running:
             try:
-                self._socket.sendall(message.encode())
+                encoded = message.encode()
+                # Сначала отправляем 4 байта длины, затем само сообщение
+                self._socket.sendall(len(encoded).to_bytes(4, "big") + encoded)
             except OSError as e:
                 self.error_occurred.emit(str(e))
 
