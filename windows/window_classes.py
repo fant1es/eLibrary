@@ -5,8 +5,11 @@ from datetime import datetime
 
 from windows import addBookWidget
 from PyQt6 import QtWidgets, QtCore
-from PyQt6.QtWidgets import QFileDialog
+from PyQt6.QtWidgets import QFileDialog, QDialog, QVBoxLayout, QScrollArea, QWidget, QMessageBox
 from PyQt6.QtGui import QPixmap
+from PyQt6.QtCore import pyqtSignal
+
+from classes.classes import DeletableBookCard
 
 
 class AddBookWin(QtWidgets.QWidget, addBookWidget.Ui_addBookWidget):
@@ -281,3 +284,61 @@ class AddBookWin(QtWidgets.QWidget, addBookWidget.Ui_addBookWidget):
         self.rating_edit.clear()
         self.book_path_edit.clear()
         self.cover_path_edit.clear()
+
+
+class DeleteBookWin(QDialog):
+    book_delete_requested = pyqtSignal(int)
+
+    def __init__(self, parent=None):
+        super().__init__(parent)
+        self.setWindowTitle("Выберите книгу для удаления")
+        self.setFixedSize(1004, 600)
+
+        self.main_layout = QVBoxLayout(self)
+        self.scroll = QScrollArea()
+        self.scroll.setWidgetResizable(True)
+        self.container = QWidget()
+        self.container_layout = QVBoxLayout(self.container)
+
+        self.scroll.setWidget(self.container)
+        self.main_layout.addWidget(self.scroll)
+
+    def refresh_books(self, books_data):
+        """Очищает и заново отрисовывает карточки книг"""
+        # Очистка старых виджетов
+        while self.container_layout.count():
+            item = self.container_layout.takeAt(0)
+            if item.widget():
+                item.widget().deleteLater()
+
+        for book in books_data:
+            # Декодируем обложку из base64, которая пришла в словаре
+            pixmap = QPixmap()
+            cover_b64 = book.get("cover_pic")
+            if cover_b64:
+                pixmap.loadFromData(base64.b64decode(cover_b64))
+
+            # Создаем карточку
+            card = DeletableBookCard(
+                book_id=book["id"],
+                name=book["name"],
+                author=book["author"],
+                public_date=datetime.strptime(book["public_date"], "%d.%m.%Y").date(),
+                rating=book["rating"],
+                genres=book["genres"],
+                summary=book["summary"],
+                pixmap=pixmap,
+                file_path=book["file_path"]
+            )
+            card.clicked_for_delete.connect(self.on_card_clicked)
+            self.container_layout.addWidget(card)
+
+    def on_card_clicked(self, b_id, b_name):
+        reply = QMessageBox.question(
+            self, "Подтверждение",
+            f"Вы действительно хотите удалить книгу '{b_name}'?",
+            QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No
+        )
+        if reply == QMessageBox.StandardButton.Yes:
+            self.book_delete_requested.emit(b_id)
+            self.accept()

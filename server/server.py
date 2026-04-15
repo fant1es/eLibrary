@@ -8,7 +8,7 @@ from threading import Thread
 from dotenv import load_dotenv
 
 from database.crud import get_genres, get_genre, add_genre, delete_genres
-from database.crud import get_books, add_book
+from database.crud import get_books, add_book, delete_book
 from database.database import SessionLocal, init_db
 from database.database import GenreTable, BookTable
 
@@ -215,6 +215,18 @@ def handle_client(client: socket.socket, address):
                     except Exception as e:
                         print(f"[Ошибка добавления книги] {e}")
                         response = json.dumps({"status": "error", "message": f"Ошибка при добавлении книги: {e}"},
+                                              ensure_ascii=False)
+
+                elif message.startswith("delete_book|"):
+                    book_id = int(message.split("|", 1)[1])
+                    with SessionLocal() as session:
+                        # Удаляем и проверяем, что действительно удалили внутри метода
+                        success = delete_book(session, book_id)
+
+                    if success:
+                        response = fetch_books_json()
+                    else:
+                        response = json.dumps({"status": "error", "message": "Книга не найдена"},
                                               ensure_ascii=False)
 
                 else:

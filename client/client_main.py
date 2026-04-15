@@ -10,7 +10,7 @@ from PyQt6.QtCore import QByteArray
 from classes.classes import BookCard
 from client.delegates import RangeDelegate
 from windows import clientWindow
-from windows.window_classes import AddBookWin
+from windows.window_classes import AddBookWin, DeleteBookWin
 from client.socket_worker import SocketWorker
 
 
@@ -23,6 +23,7 @@ class Client(QtWidgets.QMainWindow, clientWindow.Ui_MainWindow):
         self.all_genres = []
 
         # --- Окна администратора ------------------------------
+        # --- Окно добавления книги (+ жанры) ----------------------------
         self.add_book_btn.clicked.connect(self.add_book_print)
         self.add_book_window = AddBookWin()
 
@@ -38,6 +39,13 @@ class Client(QtWidgets.QMainWindow, clientWindow.Ui_MainWindow):
             lambda ids: self.socket_worker.send(f"delete_genres|{','.join(map(str, ids))}")
         )
 
+        # --- Окно удаления книги ------------------------------
+        self.del_book_btn.clicked.connect(self.delete_book_print)
+        self.delete_book_window = DeleteBookWin(self)
+
+        self.delete_book_window.book_delete_requested.connect(
+            lambda book_id: self.socket_worker.send(f"delete_book|{book_id}")
+        )
 
         # --- Установка потока с сокетом -----------------------
         self.socket_worker = SocketWorker()
@@ -67,7 +75,6 @@ class Client(QtWidgets.QMainWindow, clientWindow.Ui_MainWindow):
         self.range_delegate = RangeDelegate()
         self.filter_tree.setItemDelegate(self.range_delegate)
 
-
         # --- Привязка событий под кнопки и триггеры ------------
         self.exit_btn.clicked.connect(self.exit)
         self.exit_action.triggered.connect(self.exit)
@@ -83,6 +90,15 @@ class Client(QtWidgets.QMainWindow, clientWindow.Ui_MainWindow):
             # Передаем актуальные жанры перед показом
             self.add_book_window.set_genres(self.all_genres)
             self.add_book_window.show()
+
+    def delete_book_print(self):
+        if not self.all_books:
+            QMessageBox.information(self, "Инфо", "Список книг пуст")
+            return
+
+        # Передаем все книги для карточек
+        self.delete_book_window.refresh_books(self.all_books)
+        self.delete_book_window.exec()
 
     # --- Работа с жанрами --------------------------------------
     def on_genres_received(self, genres: list[dict]):
