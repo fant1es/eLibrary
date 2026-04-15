@@ -271,3 +271,13 @@ class AddBookWin(QtWidgets.QWidget, addBookWidget.Ui_addBookWidget):
 
     def cancel(self):
         self.hide()
+
+        self.book_name_edit.clear()
+        self.author_edit.clear()
+        self.summary_text_edit.clear()
+        self.public_date_calendar.setSelectedDate(QtCore.QDate.currentDate())
+        self.add_genre_edit.clear()
+        self.genres_list_widget.selectedItems().clear()
+        self.rating_edit.clear()
+        self.book_path_edit.clear()
+        self.cover_path_edit.clear()
