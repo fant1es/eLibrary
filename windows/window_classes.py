@@ -9,7 +9,7 @@ from PyQt6.QtWidgets import QFileDialog, QDialog, QVBoxLayout, QScrollArea, QWid
 from PyQt6.QtGui import QPixmap
 from PyQt6.QtCore import pyqtSignal
 
-from classes.classes import DeletableBookCard
+from classes.classes import SelectableBookCard
 
 
 class AddBookWin(QtWidgets.QWidget, addBookWidget.Ui_addBookWidget):
@@ -17,11 +17,17 @@ class AddBookWin(QtWidgets.QWidget, addBookWidget.Ui_addBookWidget):
     genre_add_requested = QtCore.pyqtSignal(str)
     genre_delete_requested = QtCore.pyqtSignal(list)
     book_add_requested = QtCore.pyqtSignal(str)
+    book_edit_requested = QtCore.pyqtSignal(str)
 
     def __init__(self):
         super().__init__()
         self.setupUi(self)
         self.setWindowFlags(QtCore.Qt.WindowType.WindowCloseButtonHint | QtCore.Qt.WindowType.WindowTitleHint)
+
+        # Флаг режима (None = добавление)
+        self.editing_book_id = None
+        # Для сохранения предыдущей обложки
+        self.old_cover_b64 = None
 
         self.add_genre_btn.clicked.connect(self._on_add_genre)
         self.add_genre_edit.returnPressed.connect(self._on_add_genre)
@@ -34,6 +40,40 @@ class AddBookWin(QtWidgets.QWidget, addBookWidget.Ui_addBookWidget):
         self.review_book_path_btn.clicked.connect(self.select_book_path)
 
         self.genres_list_widget.installEventFilter(self)
+
+    # --- Подготовка для редактирования -------------------------
+    def load_for_edit(self, book_data: dict, all_genres: list[dict]):
+        """Заполняет поля данными для редактирования существующей книги"""
+        self.editing_book_id = book_data["id"]
+
+        self.setWindowTitle(f"Редактирование книги: {book_data['name']}")
+        self.add_btn.setText("Сохранить изменения")
+
+        self.book_name_edit.setText(book_data["name"])
+        self.author_edit.setText(book_data["author"])
+        self.summary_text_edit.setPlainText(book_data["summary"])
+        self.rating_edit.setText(str(book_data["rating"]))
+
+        # Дата
+        date_obj = QtCore.QDate.fromString(book_data["public_date"], "dd.MM.yyyy")
+        self.public_date_calendar.setSelectedDate(date_obj)
+
+        # Жанры
+        # Сначала заполняем, чтобы потом их выделить
+        self.set_genres(all_genres)
+        for i in range(self.genres_list_widget.count()):
+            item = self.genres_list_widget.item(i)
+            if item.text() in book_data.get("genres", []):
+                item.setSelected(True)
+
+        # Пути оставляем пустыми с подсказкой
+        self.book_path_edit.clear()
+        self.book_path_edit.setPlaceholderText("Файл загружен. Оставьте пустым, чтобы не менять")
+        self.cover_path_edit.clear()
+        self.cover_path_edit.setPlaceholderText("Обложка есть. Оставьте пустым, чтобы не менять")
+
+        # Сохраняем старую обложку (base64-строку)
+        self.old_cover_b64 = book_data.get('cover_pic')
 
     # --- Жанры -------------------------------------------------
     def set_genres(self, genres: list[dict]):
@@ -131,9 +171,10 @@ class AddBookWin(QtWidgets.QWidget, addBookWidget.Ui_addBookWidget):
 
         # Файл книги
         book_path = self.book_path_edit.text().strip()
-        if not book_path:
+        # Если добавляем (не редактируем) — файл обязателен
+        if not book_path and self.editing_book_id is None:
             errors.append("Необходимо выбрать файл книги")
-        elif not os.path.exists(book_path):
+        elif book_path and not os.path.exists(book_path):
             errors.append("Файл книги не найден по указанному пути")
 
         # Обложка (необязательна)
@@ -174,6 +215,9 @@ class AddBookWin(QtWidgets.QWidget, addBookWidget.Ui_addBookWidget):
         pixmap = QPixmap()
         if data["cover_path"]:
             pixmap.load(data["cover_path"])
+        elif self.old_cover_b64:
+            # Отображаем старую обложку в превью, если она есть
+            pixmap.loadFromData(base64.b64decode(self.old_cover_b64))
 
         card = BookCard(
             name=data["name"],
@@ -186,12 +230,12 @@ class AddBookWin(QtWidgets.QWidget, addBookWidget.Ui_addBookWidget):
             file_path="",
         )
 
-        dialog = QtWidgets.QDialog(self)
+        dialog = QtWidgets.QDialog()
         dialog.setWindowTitle("Предпросмотр карточки")
         dialog.setWindowFlags(QtCore.Qt.WindowType.WindowCloseButtonHint | QtCore.Qt.WindowType.WindowTitleHint)
 
-        dialog.setFixedWidth(600)
-        dialog.setFixedHeight(400)
+        dialog.setFixedWidth(800)
+        dialog.setFixedHeight(450)
 
         layout = QtWidgets.QVBoxLayout(dialog)
         layout.addWidget(card)
@@ -224,18 +268,20 @@ class AddBookWin(QtWidgets.QWidget, addBookWidget.Ui_addBookWidget):
             return
 
         # Кодируем файл книги
-        with open(data["book_path"], "rb") as f:
-            book_b64 = base64.b64encode(f.read()).decode()
+        book_b64, book_filename = None, None
+        if data["book_path"]:
+            with open(data["book_path"], "rb") as f:
+                book_b64 = base64.b64encode(f.read()).decode()
+            book_filename = os.path.basename(data["book_path"])
 
-        # Кодируем обложку (если есть)
-        cover_b64 = None
-        cover_filename = None
+        # Кодируем обложку
+        cover_b64, cover_filename = None, None
         if data["cover_path"]:
             with open(data["cover_path"], "rb") as f:
                 cover_b64 = base64.b64encode(f.read()).decode()
             cover_filename = os.path.basename(data["cover_path"])
 
-        payload = json.dumps({
+        payload_dict = {
             "name": data["name"],
             "author": data["author"],
             "summary": data["summary"],
@@ -243,12 +289,19 @@ class AddBookWin(QtWidgets.QWidget, addBookWidget.Ui_addBookWidget):
             "public_date": data["public_date"],
             "genre_ids": data["genre_ids"],
             "book_data": book_b64,
-            "book_filename": os.path.basename(data["book_path"]),
+            "book_filename": book_filename,
             "cover_data": cover_b64,
             "cover_filename": cover_filename,
-        }, ensure_ascii=False)
+        }
 
-        self.book_add_requested.emit(payload)
+        if self.editing_book_id:
+            payload_dict["id"] = self.editing_book_id
+            payload = json.dumps(payload_dict, ensure_ascii=False)
+            self.book_edit_requested.emit(payload)
+        else:
+            payload = json.dumps(payload_dict, ensure_ascii=False)
+            self.book_add_requested.emit(payload)
+
         self.hide()
 
     # --- Файловые диалоги --------------------------------------
@@ -272,26 +325,39 @@ class AddBookWin(QtWidgets.QWidget, addBookWidget.Ui_addBookWidget):
         if book_path:
             self.book_path_edit.setText(book_path)
 
-    def cancel(self):
-        self.hide()
+    def reset(self):
+        self.editing_book_id = None
+        self.setWindowTitle("Добавление книги")
+        self.add_btn.setText("Добавить")
 
         self.book_name_edit.clear()
         self.author_edit.clear()
         self.summary_text_edit.clear()
         self.public_date_calendar.setSelectedDate(QtCore.QDate.currentDate())
+
         self.add_genre_edit.clear()
         self.genres_list_widget.selectedItems().clear()
+
         self.rating_edit.clear()
+
         self.book_path_edit.clear()
+        self.book_path_edit.setPlaceholderText("")
         self.cover_path_edit.clear()
+        self.cover_path_edit.setPlaceholderText("")
+
+    def cancel(self):
+        self.reset()
+        self.hide()
 
 
-class DeleteBookWin(QDialog):
-    book_delete_requested = pyqtSignal(int)
+class SelectBookWin(QDialog):
+    book_selected = pyqtSignal(int)
 
-    def __init__(self, parent=None):
+    def __init__(self, mode="delete", parent=None):
         super().__init__(parent)
-        self.setWindowTitle("Выберите книгу для удаления")
+        self.mode = mode
+        title = "Выберите книгу для удаления" if mode == "delete" else "Выберите книгу для редактирования"
+        self.setWindowTitle(title)
         self.setFixedSize(1004, 600)
 
         self.main_layout = QVBoxLayout(self)
@@ -319,7 +385,7 @@ class DeleteBookWin(QDialog):
                 pixmap.loadFromData(base64.b64decode(cover_b64))
 
             # Создаем карточку
-            card = DeletableBookCard(
+            card = SelectableBookCard(
                 book_id=book["id"],
                 name=book["name"],
                 author=book["author"],
@@ -334,11 +400,15 @@ class DeleteBookWin(QDialog):
             self.container_layout.addWidget(card)
 
     def on_card_clicked(self, b_id, b_name):
-        reply = QMessageBox.question(
-            self, "Подтверждение",
-            f"Вы действительно хотите удалить книгу '{b_name}'?",
-            QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No
-        )
-        if reply == QMessageBox.StandardButton.Yes:
-            self.book_delete_requested.emit(b_id)
+        if self.mode == "delete":
+            reply = QMessageBox.question(
+                self, "Подтверждение", f"Вы действительно хотите удалить книгу '{b_name}'?",
+                QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No
+            )
+            if reply == QMessageBox.StandardButton.Yes:
+                self.book_selected.emit(b_id)
+                self.accept()
+        else:
+            # Если режим edit, просто передаем выбранную книгу дальше
+            self.book_selected.emit(b_id)
             self.accept()

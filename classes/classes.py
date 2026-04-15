@@ -29,15 +29,15 @@ class BookCard(QWidget):
         self.ui.download_label.linkActivated.connect(lambda: self.download_requested.emit(self.file_path))
 
 
-class DeletableBookCard(BookCard):
-    """Карточка книги, только для отображения при удалении"""
+class SelectableBookCard(BookCard):
+    """Карточка книги для выбора (удаления или изменения)"""
     # Сигнал передает ID книги и её название для подтверждения
     clicked_for_delete = pyqtSignal(int, str)
 
-    def __init__(self, book_id: int, *args, **kwargs):
-        super().__init__(*args, **kwargs)
+    def __init__(self, book_id: int, name: str, *args, **kwargs):
+        super().__init__(name=name, *args, **kwargs)
         self.book_id = book_id
-        self.book_name = kwargs.get('name')
+        self.book_name = name
 
         # Скрываем ссылку "Скачать", так как это окно удаления
         self.ui.download_label.hide()
