@@ -8,7 +8,7 @@ from threading import Thread
 from dotenv import load_dotenv
 
 from database.crud import get_genres, get_genre, add_genre, delete_genres
-from database.crud import get_books, add_book, delete_book
+from database.crud import get_books, add_book, delete_book, update_book
 from database.database import SessionLocal, init_db
 from database.database import GenreTable, BookTable
 
@@ -228,6 +228,32 @@ def handle_client(client: socket.socket, address):
                     else:
                         response = json.dumps({"status": "error", "message": "Книга не найдена"},
                                               ensure_ascii=False)
+
+                elif message.startswith("edit_book|"):
+                    try:
+                        payload = json.loads(message.split("|", 1)[1])
+
+                        book_filename = None
+                        if payload.get("book_data") and payload.get("book_filename"):
+                            book_filename = payload["book_filename"]
+                            with open(os.path.join(BOOKS_DIR, book_filename), "wb") as f:
+                                f.write(base64.b64decode(payload["book_data"]))
+
+                        cover_filename = None
+                        if payload.get("cover_data") and payload.get("cover_filename"):
+                            cover_filename = payload["cover_filename"]
+                            with open(os.path.join(COVERS_DIR, cover_filename), "wb") as f:
+                                f.write(base64.b64decode(payload["cover_data"]))
+
+                        with SessionLocal() as session:
+                            success = update_book(session, payload, book_filename, cover_filename)
+
+                        response = fetch_books_json() if success else json.dumps(
+                            {"status": "error", "message": "Книга не найдена"}, ensure_ascii=False)
+                        
+                    except Exception as e:
+                        print(f"[Ошибка изменения] {e}")
+                        response = json.dumps({"status": "error", "message": str(e)}, ensure_ascii=False)
 
                 else:
                     response = json.dumps({"status": "error", "message": "unknown command"})

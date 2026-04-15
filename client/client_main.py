@@ -10,7 +10,7 @@ from PyQt6.QtCore import QByteArray
 from classes.classes import BookCard
 from client.delegates import RangeDelegate
 from windows import clientWindow
-from windows.window_classes import AddBookWin, DeleteBookWin
+from windows.window_classes import AddBookWin, SelectBookWin
 from client.socket_worker import SocketWorker
 
 
@@ -23,29 +23,36 @@ class Client(QtWidgets.QMainWindow, clientWindow.Ui_MainWindow):
         self.all_genres = []
 
         # --- Окна администратора ------------------------------
-        # --- Окно добавления книги (+ жанры) ----------------------------
+        # --- Окно добавления/редактирования (универсальное) ------------
         self.add_book_btn.clicked.connect(self.add_book_print)
         self.add_book_window = AddBookWin()
 
         self.add_book_window.book_add_requested.connect(
             lambda payload: self.socket_worker.send(f"add_book|{payload}")
         )
+        self.add_book_window.book_edit_requested.connect(
+            lambda payload: self.socket_worker.send(f"edit_book|{payload}")
+        )
 
         self.add_book_window.genre_add_requested.connect(
             lambda name: self.socket_worker.send(f"add_genre|{name}")
         )
-        # Удаление по всем переданным ID через запятую
         self.add_book_window.genre_delete_requested.connect(
             lambda ids: self.socket_worker.send(f"delete_genres|{','.join(map(str, ids))}")
         )
 
         # --- Окно удаления книги ------------------------------
         self.del_book_btn.clicked.connect(self.delete_book_print)
-        self.delete_book_window = DeleteBookWin(self)
-
-        self.delete_book_window.book_delete_requested.connect(
+        self.delete_book_window = SelectBookWin(mode="delete", parent=self)
+        self.delete_book_window.book_selected.connect(
             lambda book_id: self.socket_worker.send(f"delete_book|{book_id}")
         )
+
+        # --- Окно изменения книги ------------------------------
+        self.edit_book_btn.clicked.connect(self.edit_book_print)
+        self.edit_book_window = SelectBookWin(mode="edit", parent=self)
+        # Вызываем переход к универсальному окну
+        self.edit_book_window.book_selected.connect(self.on_book_selected_for_edit)
 
         # --- Установка потока с сокетом -----------------------
         self.socket_worker = SocketWorker()
@@ -87,6 +94,8 @@ class Client(QtWidgets.QMainWindow, clientWindow.Ui_MainWindow):
             except FileNotFoundError:
                 print("Файл стилей не найден.")
 
+            # Сброс режима на "добавление"
+            self.add_book_window.reset()
             # Передаем актуальные жанры перед показом
             self.add_book_window.set_genres(self.all_genres)
             self.add_book_window.show()
@@ -99,6 +108,26 @@ class Client(QtWidgets.QMainWindow, clientWindow.Ui_MainWindow):
         # Передаем все книги для карточек
         self.delete_book_window.refresh_books(self.all_books)
         self.delete_book_window.exec()
+
+    def edit_book_print(self):
+        if not self.all_books:
+            QMessageBox.information(self, "Инфо", "Список книг пуст")
+            return
+        self.edit_book_window.refresh_books(self.all_books)
+        self.edit_book_window.exec()
+
+    def on_book_selected_for_edit(self, book_id: int):
+        # Находим книгу по ID
+        book_data = next((b for b in self.all_books if b["id"] == book_id), None)
+        if book_data:
+            try:
+                with open("styles/addBookStyle.qss", "r", encoding="utf-8") as file:
+                    self.add_book_window.setStyleSheet(file.read())
+            except FileNotFoundError:
+                print("Файл стилей не найден.")
+
+            self.add_book_window.load_for_edit(book_data, self.all_genres)
+            self.add_book_window.show()
 
     # --- Работа с жанрами --------------------------------------
     def on_genres_received(self, genres: list[dict]):
