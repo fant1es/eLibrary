@@ -15,7 +15,7 @@ from client.socket_worker import SocketWorker
 
 
 class Client(QtWidgets.QMainWindow, clientWindow.Ui_MainWindow):
-    def __init__(self):
+    def __init__(self, socket_worker):
         super().__init__()
         self.setupUi(self)
 
@@ -55,7 +55,7 @@ class Client(QtWidgets.QMainWindow, clientWindow.Ui_MainWindow):
         self.edit_book_window.book_selected.connect(self.on_book_selected_for_edit)
 
         # --- Установка потока с сокетом -----------------------
-        self.socket_worker = SocketWorker()
+        self.socket_worker = socket_worker
 
         self.socket_worker.connected.connect(lambda: print("Успешное подключение!"))
         self.socket_worker.connected.connect(lambda: self.socket_worker.send("get_books"))

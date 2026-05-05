@@ -20,6 +20,8 @@ class SocketWorker(QThread):
     genres_received = pyqtSignal(list)
     file_received = pyqtSignal(str, bytes)
 
+    login_result = pyqtSignal(bool, dict)  # (Успех: True/False, Данные пользователя)
+
     error_occurred = pyqtSignal(str)
 
     HOST = os.getenv("SERVER_HOST", "127.0.0.1")
@@ -70,6 +72,13 @@ class SocketWorker(QThread):
                             filename = json_data["filename"]
                             file_bytes = base64.b64decode(json_data["file_data"])
                             self.file_received.emit(filename, file_bytes)
+                        elif action == "login":
+                            if status == "success":
+                                # Эмитируем успех и передаем данные (например, роль или имя)
+                                self.login_result.emit(True, json_data.get("user_data", {}))
+                            else:
+                                self.login_result.emit(False, {})
+                                self.error_occurred.emit(json_data.get("message", "Ошибка входа"))
 
         except ConnectionRefusedError:
             self.error_occurred.emit("Сервер недоступен")

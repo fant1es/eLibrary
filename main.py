@@ -9,18 +9,14 @@ class AppController:
     def __init__(self):
         self.app = QApplication(sys.argv)
 
-        # 1. Загружаем общие стили
         self.load_styles()
 
-        # 2. Инициализируем сокет ОДИН раз
+        # Инициализируем сокет ОДИН раз
         self.socket_worker = SocketWorker()
         self.socket_worker.start()
 
-        # 3. Создаем окно входа и передаем туда сокет
         self.login_window = Login(self.socket_worker)
 
-        # Подписываемся на успешный логин (нужно добавить сигнал в SocketWorker)
-        # Для примера: при получении любого ответа "success" переключаем окно
         self.socket_worker.connected.connect(lambda: print("Сессия сокета активна"))
 
         self.login_window.show()
