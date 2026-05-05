@@ -13,6 +13,8 @@ class Ui_MainWindow(object):
     def setupUi(self, MainWindow):
         MainWindow.setObjectName("MainWindow")
         MainWindow.resize(800, 413)
+        MainWindow.setMinimumSize(QtCore.QSize(800, 413))
+        MainWindow.setMaximumSize(QtCore.QSize(800, 413))
         self.centralwidget = QtWidgets.QWidget(parent=MainWindow)
         self.centralwidget.setObjectName("centralwidget")
         self.verticalLayout_2 = QtWidgets.QVBoxLayout(self.centralwidget)
