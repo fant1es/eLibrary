@@ -1,6 +1,7 @@
 import sys
 from PyQt6.QtWidgets import QApplication
 from client.client_main import Client
+from client.login_client import Login
 
 
 def main():
@@ -13,7 +14,7 @@ def main():
     except FileNotFoundError:
         print("Файл стилей не найден.")
 
-    window = Client()
+    window = Login()
     window.show()
 
     # Запускаем стандартный цикл PyQt (он заблокирует поток до закрытия окна)
