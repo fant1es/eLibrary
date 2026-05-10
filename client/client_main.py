@@ -60,10 +60,9 @@ class Client(QtWidgets.QMainWindow, clientWindow.Ui_MainWindow):
         # --- Установка потока с сокетом -----------------------
         self.socket_worker = socket_worker
 
-        self.socket_worker.connected.connect(lambda: print("Успешное подключение!"))
-        self.socket_worker.connected.connect(lambda: self.socket_worker.send("get_books"))
-        self.socket_worker.connected.connect(lambda: self.socket_worker.send("get_genres"))
-        self.socket_worker.disconnected.connect(lambda: print("Отключение от сервера."))
+        # Запрашиваем необходимые данные
+        self.socket_worker.send("get_books")
+        self.socket_worker.send("get_genres")
 
         self.socket_worker.error_occurred.connect(self.show_error)
         self.socket_worker.books_received.connect(self.on_books_received)
