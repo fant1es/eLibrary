@@ -62,15 +62,15 @@ QPushButton {
 }
 
 /* Кнопка "Регистрация" */
-#register_brn {
+#register_btn {
     background-color: #a5d6a7;
     color: #2e7d32;
 }
 
-#register_brn:hover {
+#register_btn:hover {
     background-color: #81c784;
 }
 
-#register_brn:pressed {
+#register_btn:pressed {
     background-color: #3e8e41;
 }

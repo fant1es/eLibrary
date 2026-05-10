@@ -9,6 +9,7 @@ from dotenv import load_dotenv
 
 from database.crud import get_genres, get_genre, add_genre, delete_genres
 from database.crud import get_books, add_book, delete_book, update_book
+from database.crud import authenticate_user, register_user
 from database.database import SessionLocal, init_db
 from database.database import BookTable
 
@@ -254,6 +255,62 @@ def handle_client(client: socket.socket, address):
                     except Exception as e:
                         print(f"[Ошибка изменения] {e}")
                         response = json.dumps({"status": "error", "message": str(e)}, ensure_ascii=False)
+
+                elif message.startswith("login|"):
+                    try:
+                        # Ожидаем формат "login|username:password"
+                        credentials = message.split("|", 1)[1].strip()
+                        username, password = credentials.split(":", 1)
+
+                        with SessionLocal() as session:
+                            # Проверяем через БД
+                            user = authenticate_user(session, username, password)
+
+                            if user:
+                                response = json.dumps({
+                                    "status": "success",
+                                    "action": "login",
+                                    "user_data": {
+                                        "username": user.username,
+                                        "role": user.role.value if hasattr(user.role, "value") else str(user.role)
+                                    }
+                                }, ensure_ascii=False)
+                            else:
+                                response = json.dumps({
+                                    "status": "error",
+                                    "action": "login",
+                                    "message": "Неверное имя пользователя или пароль"
+                                }, ensure_ascii=False)
+                    except ValueError:
+                        response = json.dumps({"status": "error", "message": "Неверный формат данных авторизации"})
+
+                elif message.startswith("register|"):
+                    try:
+                        credentials = message.split("|", 1)[1].strip()
+                        username, password = credentials.split(":", 1)
+
+                        with SessionLocal() as session:
+                            # Функция register_user должна быть реализована в crud.py
+                            # Возвращает кортеж: (Успех: bool, Объект пользователя или текст ошибки)
+                            success, result = register_user(session, username, password)
+
+                            if success:
+                                response = json.dumps({
+                                    "status": "success",
+                                    "action": "login",  # Отправляем как login, чтобы клиент сразу вошел
+                                    "user_data": {
+                                        "username": result.username,
+                                        "role": result.role.value if hasattr(result.role, "value") else str(result.role)
+                                    }
+                                }, ensure_ascii=False)
+                            else:
+                                response = json.dumps({
+                                    "status": "error",
+                                    "action": "login",
+                                    "message": result  # Текст ошибки, например "Имя уже занято"
+                                }, ensure_ascii=False)
+                    except ValueError:
+                        response = json.dumps({"status": "error", "message": "Неверный формат данных регистрации"})
 
                 else:
                     response = json.dumps({"status": "error", "message": "unknown command"})

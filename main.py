@@ -9,24 +9,34 @@ class AppController:
     def __init__(self):
         self.app = QApplication(sys.argv)
 
-        self.load_styles()
-
-        # Инициализируем сокет ОДИН раз
         self.socket_worker = SocketWorker()
         self.socket_worker.start()
 
-        self.login_window = Login(self.socket_worker)
+        self.socket_worker.error_occurred.connect(self.show_error_message) # Добавляем связь
 
-        self.socket_worker.connected.connect(lambda: print("Сессия сокета активна"))
+        # Сначала окно с логином, главное после входа
+        self.login_window = Login(self.socket_worker)
+        self.main_window = None
+
+        self.socket_worker.login_result.connect(self.handle_login)
 
         self.login_window.show()
 
-    def load_styles(self):
-        try:
-            with open("styles/style.qss", "r", encoding="utf-8") as file:
-                self.app.setStyleSheet(file.read())
-        except FileNotFoundError:
-            print("Файл стилей не найден.")
+    def show_error_message(self, message):
+        from PyQt6.QtWidgets import QMessageBox
+        QMessageBox.critical(self.login_window, "Ошибка", message)
+
+    def handle_login(self, success, user_data):
+        if success:
+            print(f"Авторизация успешна! Данные: {user_data}")
+            self.login_window.hide()
+
+            # Теперь даем главное окно юзеру
+            self.main_window = Client(self.socket_worker)
+            self.main_window.show()
+        else:
+            # Окно логина само покажет ошибку через error_occurred
+            print("Вход или регистрация не удались")
 
     def run(self):
         sys.exit(self.app.exec())

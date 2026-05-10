@@ -12,7 +12,7 @@ class Login(QtWidgets.QMainWindow, loginWindow.Ui_MainWindow):
             self.setStyleSheet(file.read())
 
         self.login_btn.clicked.connect(self.try_login)
-        self.register_btn.clicked.connect(self.try_login)
+        self.register_btn.clicked.connect(self.try_register)
 
     def try_login(self):
         username = self.username_edit.text()
