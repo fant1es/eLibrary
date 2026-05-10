@@ -3,7 +3,7 @@ import base64
 from PyQt6.QtGui import QStandardItemModel, QStandardItem, QPixmap
 from PyQt6 import QtWidgets
 from PyQt6.QtWidgets import QVBoxLayout, QMessageBox
-from PyQt6.QtCore import QByteArray
+from PyQt6.QtCore import QByteArray, Qt
 
 # from rapidfuzz import process, fuzz
 
@@ -11,7 +11,6 @@ from classes.classes import BookCard
 from client.delegates import RangeDelegate
 from windows import clientWindow
 from windows.window_classes import AddBookWin, SelectBookWin
-from client.socket_worker import SocketWorker
 
 
 class Client(QtWidgets.QMainWindow, clientWindow.Ui_MainWindow):
@@ -24,7 +23,7 @@ class Client(QtWidgets.QMainWindow, clientWindow.Ui_MainWindow):
 
         self.all_books = []
         self.all_genres = []
-
+        self.scroll_area.setWidgetResizable(True)
         self.user_role = user_role
         self.setup_permissions()
 
@@ -75,9 +74,9 @@ class Client(QtWidgets.QMainWindow, clientWindow.Ui_MainWindow):
         self.socket_worker.start()
 
         # --- Установка дерева с фильтрами ---------------------
-        self.tree_model = setup_filter_tree()
-        self.filter_tree.expandAll()
+        self.tree_model = self._setup_filter_tree()
         self.filter_tree.setModel(self.tree_model)
+        self.filter_tree.expandAll()
 
         self.filter_tree.setIndentation(20)
         self.filter_tree.setAnimated(True)
@@ -86,6 +85,9 @@ class Client(QtWidgets.QMainWindow, clientWindow.Ui_MainWindow):
 
         self.range_delegate = RangeDelegate()
         self.filter_tree.setItemDelegate(self.range_delegate)
+
+        # Подключаем сигнал изменения модели к фильтрации
+        self.tree_model.itemChanged.connect(self.apply_filters)
 
         # --- Привязка событий под кнопки и триггеры ------------
         self.exit_btn.clicked.connect(self.exit)
@@ -152,28 +154,180 @@ class Client(QtWidgets.QMainWindow, clientWindow.Ui_MainWindow):
         # Обновляем виджет, если окно открыто
         if not self.add_book_window.isHidden():
             self.add_book_window.set_genres(self.all_genres)
+        # Обновляем фильтр жанров в дереве
+        self._update_genre_filters(self.all_genres)
 
     # --- Работа с книгами --------------------------------------
     def on_books_received(self, books: list[dict]):
-        self.all_books = books.copy()
+        # Предварительная обработка обложек для быстрой отрисовки книг
+        for book in books:
+            if book.get("cover_pic"):
+                pix = QPixmap()
+                pix.loadFromData(QByteArray(base64.b64decode(book["cover_pic"])))
+                book["cached_pixmap"] = pix
+            else:
+                # Заглушка
+                book["cached_pixmap"] = QPixmap()
 
-        # В layout прокрутка со всеми карточками книг
+        self.all_books = books.copy()
+        # Обновляем список авторов в фильтре
+        self._update_author_filters(self.all_books)
+        # Применяем текущие фильтры
+        self.apply_filters()
+
+    # --- Фильтрация ------------------------------------------------
+    def _update_genre_filters(self, genres: list[dict]):
+        """Перестраивает чекбоксы жанров в дереве фильтров."""
+        self.tree_model.blockSignals(True)
+        self.genre_filter_item.removeRows(0, self.genre_filter_item.rowCount())
+
+        for genre in genres:
+            # Жанр может быть словарем или просто строкой
+            name = genre.get("name", str(genre)) if isinstance(genre, dict) else str(genre)
+            child = QStandardItem(name)
+            child.setCheckable(True)
+            child.setCheckState(Qt.CheckState.Unchecked)
+            self.genre_filter_item.appendRow(child)
+
+        self.filter_tree.expand(self.genre_filter_item.index())
+        self.tree_model.blockSignals(False)
+
+    def _update_author_filters(self, books: list[dict]):
+        """Перестраивает чекбоксы авторов в дереве фильтров, сохраняя отмеченные."""
+        # Запоминаем уже отмеченных авторов, чтобы не сбрасывать выбор при обновлении
+        checked_before = set()
+        for row in range(self.author_filter_item.rowCount()):
+            child = self.author_filter_item.child(row)
+            if child.checkState() == Qt.CheckState.Checked:
+                checked_before.add(child.text())
+
+        self.tree_model.blockSignals(True)
+        self.author_filter_item.removeRows(0, self.author_filter_item.rowCount())
+
+        unique_authors = sorted({b["author"] for b in books if b.get("author")})
+        for author in unique_authors:
+            child = QStandardItem(author)
+            child.setCheckable(True)
+            child.setCheckState(
+                Qt.CheckState.Checked if author in checked_before else Qt.CheckState.Unchecked
+            )
+            self.author_filter_item.appendRow(child)
+
+        self.filter_tree.expand(self.author_filter_item.index())
+        self.tree_model.blockSignals(False)
+
+    def _read_filter_state(self) -> dict:
+        """Читает текущее состояние всего дерева фильтров"""
+        state = {
+            "genres": set(),
+            "authors": set(),
+            "date_from": 1800,
+            "date_to": 2026,
+            "rating_from": 1.0,
+            "rating_to": 5.0,
+        }
+
+        for row in range(self.tree_model.rowCount()):
+            item = self.tree_model.item(row)
+
+            # Авторы / Жанры
+            if item.hasChildren():
+                for child_row in range(item.rowCount()):
+                    child = item.child(child_row)
+                    if child.checkState() == Qt.CheckState.Checked:
+                        if item is self.genre_filter_item:
+                            state["genres"].add(child.text())
+                        elif item is self.author_filter_item:
+                            state["authors"].add(child.text())
+                continue
+
+            # Диапазоны (Делегаты)
+            if item.data(RangeDelegate.RoleTag) != "range_editor":
+                continue
+
+            name = item.data(RangeDelegate.RoleName)
+            # Текущее значение хранится в EditRole как строка вида "Рейтинг: 1-5 ★"
+            raw = item.data(Qt.ItemDataRole.DisplayRole)
+            try:
+                # Берём часть после ":" и убираем звёздочку
+                clean = raw.split(":")[-1].strip().replace("★", "").strip()
+                lo_str, hi_str = clean.split("-")
+                lo, hi = float(lo_str), float(hi_str)
+            except (ValueError, AttributeError):
+                continue
+
+            if name == "Дата издания":
+                state["date_from"] = int(lo)
+                state["date_to"] = int(hi)
+            elif name == "Рейтинг":
+                state["rating_from"] = lo
+                state["rating_to"] = hi
+
+        return state
+
+    def apply_filters(self):
+        """Фильтрует all_books по текущему состоянию дерева и перерисовывает карточки."""
+        if not self.all_books:
+            return
+
+        f = self._read_filter_state()
+
+        filtered = []
+        for book in self.all_books:
+            # Жанры
+            if f["genres"]:
+                # book["genres"] может быть list[str] или list[dict]
+                book_genre_names = {
+                    g.get("name", str(g)) if isinstance(g, dict) else str(g)
+                    for g in book.get("genres", [])
+                }
+                if not book_genre_names.intersection(f["genres"]):
+                    continue
+
+            # Авторы
+            if f["authors"] and book.get("author") not in f["authors"]:
+                continue
+
+            # Дата издания
+            try:
+                year = datetime.strptime(book["public_date"], "%d.%m.%Y").year
+                if not (f["date_from"] <= year <= f["date_to"]):
+                    continue
+            except (ValueError, KeyError):
+                pass
+
+            # Рейтинг
+            try:
+                rating = float(book.get("rating", 0))
+                if not (f["rating_from"] <= rating <= f["rating_to"]):
+                    continue
+                print(book["rating"])
+
+            except (ValueError, TypeError):
+                print(f"Ошибка рейтинга для книги {book.get('name')}")
+                continue  # Если данные битые, лучше скрыть книгу, чем сломать фильтр
+
+            filtered.append(book)
+
+        self._render_books(filtered)
+
+    def _render_books(self, books: list[dict]):
+        """Отрисовывает карточки переданного списка книг"""
         layout = self.scrollAreaWidgetContents.layout() or QVBoxLayout(self.scrollAreaWidgetContents)
 
-        # Для обновления корректно удалить все карточки
+        # Удаляем старые карточки
         while layout.count():
             child = layout.takeAt(0)
             if child.widget():
                 child.widget().deleteLater()
 
         for book in books:
-            # Отдельно декодируем обложку
             cover_b64 = book.get("cover_pic")
             if cover_b64:
                 pixmap = QPixmap()
                 pixmap.loadFromData(QByteArray(base64.b64decode(cover_b64)))
             else:
-                pixmap = QPixmap()  # заглушка
+                pixmap = QPixmap()
 
             book_card = BookCard(
                 name=book["name"],
@@ -183,12 +337,16 @@ class Client(QtWidgets.QMainWindow, clientWindow.Ui_MainWindow):
                 genres=book["genres"],
                 summary=book["summary"],
                 file_path=book["file_path"],
-                pixmap=pixmap,
+                pixmap=book.get("cached_pixmap", QPixmap())
             )
             book_card.download_requested.connect(self.socket_worker.request_download)
-
             layout.addWidget(book_card)
 
+        layout.addStretch()
+        self.scrollAreaWidgetContents.adjustSize()
+        self.scroll_area.update()
+
+    # --- Прочее ----------------------------------------
     def save_file(self, filename: str, data: bytes):
         path, _ = QtWidgets.QFileDialog.getSaveFileName(self, "Сохранить книгу", filename)
         if path:
@@ -197,7 +355,7 @@ class Client(QtWidgets.QMainWindow, clientWindow.Ui_MainWindow):
 
     def show_error(self, message):
         msg = QMessageBox(self)
-        msg.setIcon(QMessageBox.Icon.Critical)  # Красный крестик
+        msg.setIcon(QMessageBox.Icon.Critical)
         msg.setWindowTitle("Ошибка")
         msg.setText(message)
         msg.setStandardButtons(QMessageBox.StandardButton.Ok)
@@ -208,44 +366,37 @@ class Client(QtWidgets.QMainWindow, clientWindow.Ui_MainWindow):
         self.socket_worker.wait()
         self.close()
 
+    # --- Построение дерева фильтров ----------------------------
+    def _setup_filter_tree(self) -> QStandardItemModel:
+        """Строит модель дерева фильтров и сохраняет ссылки на узлы Авторов и Жанров."""
+        model = QStandardItemModel()
+        model.setHorizontalHeaderLabels(["Фильтры"])
 
-def setup_filter_tree():
-    """Динамически ставим фильтры"""
+        # Авторы
+        self.author_filter_item = QStandardItem("Авторы:")
+        self.author_filter_item.setEditable(False)
+        model.appendRow(self.author_filter_item)
 
-    model = QStandardItemModel()
-    model.setHorizontalHeaderLabels(["Фильтры"])
+        # Жанры
+        self.genre_filter_item = QStandardItem("Жанры:")
+        self.genre_filter_item.setEditable(False)
+        model.appendRow(self.genre_filter_item)
 
-    # Родители-фильтры с детьми
-    filters_children = {"Авторы": [],
-                        "Жанры": ["Фэнтези", "Детектив"]
-                        }
+        # Диапазоны
+        model.appendRow(_create_range_item("Дата издания", "1800-2026", 1800, 2026, 1, 0))
+        model.appendRow(_create_range_item("Рейтинг", "1-5 ★", 1, 5, 0.5, 1))
 
-    for category, options in filters_children.items():
-        parent = QStandardItem(category + ":")
-        parent.setEditable(False)
+        return model
 
-        for option in options:
-            child = QStandardItem(option)
-            child.setCheckable(True)
-            parent.appendRow(child)
 
-        model.appendRow(parent)
-
-    # Родитель-фильтр без детей под делегат
-    def create_range_item(name, start_val, min_val, max_val, step, decimal):
-        item = QStandardItem(f"{name}: {start_val}")
-        item.setEditable(True)
-
-        item.setData("range_editor", RangeDelegate.RoleTag)
-        item.setData(min_val, RangeDelegate.RoleMin)
-        item.setData(max_val, RangeDelegate.RoleMax)
-        item.setData(step, RangeDelegate.RoleStep)
-        item.setData(decimal, RangeDelegate.RoleDecimals)
-        item.setData(name, RangeDelegate.RoleName)
-
-        return item
-
-    model.appendRow(create_range_item("Дата издания", "1800-2026", 1800, 2026, 1, 0))
-    model.appendRow(create_range_item("Рейтинг", "1-5 ★", 1, 5, 0.5, 1))
-
-    return model
+# --- Вспомогательные функции модуля ------------------------------------
+def _create_range_item(name: str, start_val, min_val, max_val, step, decimal) -> QStandardItem:
+    item = QStandardItem(f"{name}: {start_val}")
+    item.setEditable(True)
+    item.setData("range_editor", RangeDelegate.RoleTag)
+    item.setData(min_val, RangeDelegate.RoleMin)
+    item.setData(max_val, RangeDelegate.RoleMax)
+    item.setData(step, RangeDelegate.RoleStep)
+    item.setData(decimal, RangeDelegate.RoleDecimals)
+    item.setData(name, RangeDelegate.RoleName)
+    return item

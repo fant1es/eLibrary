@@ -42,6 +42,15 @@ class RangeDelegate(QStyledItemDelegate):
         container.spin_from = _setup_spin(container, min_val, max_val, step, decimals)
         container.spin_to = _setup_spin(container, min_val, max_val, step, decimals)
 
+        # Не даём выставить from > to
+        container.spin_from.valueChanged.connect(container.spin_to.setMinimum)
+        container.spin_to.valueChanged.connect(container.spin_from.setMaximum)
+
+        # Обновляем модель сразу при подтверждении каждого спинбокса
+        # иначе setModelData зовётся только при потере фокуса у всего делегата целиком
+        container.spin_from.valueChanged.connect(lambda _: self.commitData.emit(container))
+        container.spin_to.valueChanged.connect(lambda _: self.commitData.emit(container))
+
         name = index.data(self.RoleName) or ""
         layout.addWidget(QLabel(f"{name}: с", container))
         layout.addWidget(container.spin_from)
@@ -51,16 +60,21 @@ class RangeDelegate(QStyledItemDelegate):
         container.setFocusProxy(container.spin_from)
         return container
 
-
     def setEditorData(self, editor, index):
-        text = index.data(Qt.ItemDataRole.EditRole)
+        # Берем данные из EditRole или DisplayRole (для первого раза)
+        text = index.data(Qt.ItemDataRole.EditRole) or index.data(Qt.ItemDataRole.DisplayRole)
+
+        if not text:
+            return
+
         try:
-            # Вырезаем цифры из строки "Рейтинг: 1-5" - "1-5"
-            clean_text = text.split(":")[-1].strip()
+            # Парсим строку "Рейтинг: 1-5 ★"
+            clean_text = text.split(":")[-1].strip().replace("★", "").strip()
             start, end = clean_text.split("-")
             editor.spin_from.setValue(float(start))
             editor.spin_to.setValue(float(end))
-        except (ValueError, AttributeError):
+        except (ValueError, AttributeError, IndexError):
+            # Если что-то пошло не так, спинбоксы останутся в значениях по умолчанию
             pass
 
     def setModelData(self, editor, model, index):
@@ -68,15 +82,18 @@ class RangeDelegate(QStyledItemDelegate):
         val_from = editor.spin_from.value()
         val_to = editor.spin_to.value()
 
-        if val_from > val_to:
-            return
-
         fmt = lambda v: str(int(v)) if v == int(v) else str(round(v, 1))
 
-        # Сохраняем в модель итоговую строку c учетом типа делегата
         star = " ★" if name == "Рейтинг" else ""
         result = f"{name}: {fmt(val_from)}-{fmt(val_to)}{star}"
+
+        # Обновляем DisplayRole, чтобы текст в дереве изменился и сработал itemChanged
+        model.blockSignals(True)
+        model.setData(index, result, Qt.ItemDataRole.DisplayRole)
         model.setData(index, result, Qt.ItemDataRole.EditRole)
+        model.blockSignals(False)
+
+        model.itemChanged.emit(model.itemFromIndex(index))
 
     def updateEditorGeometry(self, editor, option, index):
         editor.setGeometry(option.rect)
