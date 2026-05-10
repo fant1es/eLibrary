@@ -19,6 +19,9 @@ class Client(QtWidgets.QMainWindow, clientWindow.Ui_MainWindow):
         super().__init__()
         self.setupUi(self)
 
+        with open("styles/style.qss", "r", encoding="utf-8") as file:
+            self.setStyleSheet(file.read())
+
         self.all_books = []
         self.all_genres = []
 
@@ -85,6 +88,7 @@ class Client(QtWidgets.QMainWindow, clientWindow.Ui_MainWindow):
         # --- Привязка событий под кнопки и триггеры ------------
         self.exit_btn.clicked.connect(self.exit)
         self.exit_action.triggered.connect(self.exit)
+
 
     def add_book_print(self):
         if self.add_book_window.isHidden():
