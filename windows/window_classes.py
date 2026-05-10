@@ -234,6 +234,9 @@ class AddBookWin(QtWidgets.QWidget, addBookWidget.Ui_addBookWidget):
         dialog.setWindowTitle("Предпросмотр карточки")
         dialog.setWindowFlags(QtCore.Qt.WindowType.WindowCloseButtonHint | QtCore.Qt.WindowType.WindowTitleHint)
 
+        with open("styles/style.qss", "r", encoding="utf-8") as file:
+            dialog.setStyleSheet(file.read())
+
         dialog.setFixedWidth(800)
         dialog.setFixedHeight(450)
 
