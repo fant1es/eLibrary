@@ -21,6 +21,15 @@ BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 COVERS_DIR = os.path.join(BASE_DIR, os.getenv("COVERS_DIR", "content/covers"))
 BOOKS_DIR = os.path.join(BASE_DIR, os.getenv("BOOKS_DIR", "content/books"))
 
+# Список команд, требующих прав администратора
+ADMIN_ONLY_COMMANDS = [
+    "add_genre",
+    "delete_genres",
+    "add_book",
+    "delete_book",
+    "edit_book"
+]
+
 
 def fetch_file_json(file_path: str) -> str:
     """Формирование JSON для передачи одной полноценной книги"""
@@ -104,7 +113,7 @@ def fetch_genres_json() -> str:
         }, ensure_ascii=False)
 
     except Exception as e:
-        print(f"[Критическая ошибкpа сервера] {e}")
+        print(f"[Критическая ошибка сервера] {e}")
         return json.dumps({
             "status": "error",
             "message": "Ошибка на стороне сервера при получении списка жанров"
@@ -138,10 +147,15 @@ def recv_exact(sock: socket.socket, msg_len: int) -> bytes | None:
 def handle_client(client: socket.socket, address):
     """Цикл работы с клиентом"""
     print(f"[+] Подключился новый клиент: {address}")
+
+    # Будем хранить роль и имя пользователя для проверки уровня доступа
+    session_role = "guest"
+    session_username = None
+
     with client:
         while True:
             try:
-                # Читаем 4 байта — длина следующего сообщения от клиента
+                # Читаем 4 байта как длину следующего сообщения от клиента
                 raw_len = recv_exact(client, 4)
                 if not raw_len:
                     break
@@ -154,10 +168,21 @@ def handle_client(client: socket.socket, address):
                     break
 
                 message = raw_data.decode().strip()
-                print(f"[{address}] Получено: {message}")
 
-                # Обработка типа запроса
-                if message == "get_books":
+                # Извлекаем тип действия, желаемый пользователем
+                action = message.split('|')[0] if '|' in message else message
+
+                print(f"[{address} ({session_username or 'Гость'})] Получено: {message[:50]}")
+
+                # Глобальная проверка прав
+                if action in ADMIN_ONLY_COMMANDS and session_role != "admin":
+                    response = json.dumps({
+                        "status": "error",
+                        "message": "Отказано в доступе: требуются права администратора"
+                    }, ensure_ascii=False)
+
+                # --- Публичные команды --------
+                elif message == "get_books":
                     response = fetch_books_json()
                 elif message == "get_genres":
                     response = fetch_genres_json()
@@ -166,6 +191,71 @@ def handle_client(client: socket.socket, address):
                     file_path = message.split("|", 1)[1].strip()
                     response = fetch_file_json(file_path)
 
+                elif message.startswith("login|"):
+                    try:
+                        # Ожидаем формат "login|username:password"
+                        credentials = message.split("|", 1)[1].strip()
+                        username, password = credentials.split(":", 1)
+
+                        with SessionLocal() as session:
+                            # Проверяем через БД
+                            user = authenticate_user(session, username, password)
+
+                            if user:
+                                # Запоминаем пользователя
+                                session_role = user.role.value if hasattr(user.role, "value") else str(user.role)
+                                session_username = user.username
+
+                                response = json.dumps({
+                                    "status": "success",
+                                    "action": "login",
+                                    "user_data": {
+                                        "username": user.username,
+                                        "role": user.role.value if hasattr(user.role, "value") else str(user.role)
+                                    }
+                                }, ensure_ascii=False)
+                            else:
+                                response = json.dumps({
+                                    "status": "error",
+                                    "action": "login",
+                                    "message": "Неверное имя пользователя или пароль"
+                                }, ensure_ascii=False)
+                    except ValueError:
+                        response = json.dumps({"status": "error", "message": "Неверный формат данных авторизации"})
+
+                elif message.startswith("register|"):
+                    try:
+                        credentials = message.split("|", 1)[1].strip()
+                        username, password = credentials.split(":", 1)
+
+                        with SessionLocal() as session:
+                            # Функция register_user должна быть реализована в crud.py
+                            # Возвращает кортеж: (Успех: bool, Объект пользователя или текст ошибки)
+                            success, result = register_user(session, username, password)
+
+                            if success:
+                                # Запоминаем пользователя
+                                session_role = result.role.value if hasattr(result.role, "value") else str(result.role)
+                                session_username = result.username
+
+                                response = json.dumps({
+                                    "status": "success",
+                                    "action": "login",  # Отправляем как login, чтобы клиент сразу вошел
+                                    "user_data": {
+                                        "username": result.username,
+                                        "role": result.role.value if hasattr(result.role, "value") else str(result.role)
+                                    }
+                                }, ensure_ascii=False)
+                            else:
+                                response = json.dumps({
+                                    "status": "error",
+                                    "action": "login",
+                                    "message": result  # Текст ошибки, например "Имя уже занято"
+                                }, ensure_ascii=False)
+                    except ValueError:
+                        response = json.dumps({"status": "error", "message": "Неверный формат данных регистрации"})
+
+                # --- Команды администратора ---
                 elif message.startswith("add_genre|"):
                     genre_name = message.split("|", 1)[1]
                     with SessionLocal() as session:
@@ -251,66 +341,10 @@ def handle_client(client: socket.socket, address):
 
                         response = fetch_books_json() if success else json.dumps(
                             {"status": "error", "message": "Книга не найдена"}, ensure_ascii=False)
-                        
+
                     except Exception as e:
                         print(f"[Ошибка изменения] {e}")
                         response = json.dumps({"status": "error", "message": str(e)}, ensure_ascii=False)
-
-                elif message.startswith("login|"):
-                    try:
-                        # Ожидаем формат "login|username:password"
-                        credentials = message.split("|", 1)[1].strip()
-                        username, password = credentials.split(":", 1)
-
-                        with SessionLocal() as session:
-                            # Проверяем через БД
-                            user = authenticate_user(session, username, password)
-
-                            if user:
-                                response = json.dumps({
-                                    "status": "success",
-                                    "action": "login",
-                                    "user_data": {
-                                        "username": user.username,
-                                        "role": user.role.value if hasattr(user.role, "value") else str(user.role)
-                                    }
-                                }, ensure_ascii=False)
-                            else:
-                                response = json.dumps({
-                                    "status": "error",
-                                    "action": "login",
-                                    "message": "Неверное имя пользователя или пароль"
-                                }, ensure_ascii=False)
-                    except ValueError:
-                        response = json.dumps({"status": "error", "message": "Неверный формат данных авторизации"})
-
-                elif message.startswith("register|"):
-                    try:
-                        credentials = message.split("|", 1)[1].strip()
-                        username, password = credentials.split(":", 1)
-
-                        with SessionLocal() as session:
-                            # Функция register_user должна быть реализована в crud.py
-                            # Возвращает кортеж: (Успех: bool, Объект пользователя или текст ошибки)
-                            success, result = register_user(session, username, password)
-
-                            if success:
-                                response = json.dumps({
-                                    "status": "success",
-                                    "action": "login",  # Отправляем как login, чтобы клиент сразу вошел
-                                    "user_data": {
-                                        "username": result.username,
-                                        "role": result.role.value if hasattr(result.role, "value") else str(result.role)
-                                    }
-                                }, ensure_ascii=False)
-                            else:
-                                response = json.dumps({
-                                    "status": "error",
-                                    "action": "login",
-                                    "message": result  # Текст ошибки, например "Имя уже занято"
-                                }, ensure_ascii=False)
-                    except ValueError:
-                        response = json.dumps({"status": "error", "message": "Неверный формат данных регистрации"})
 
                 else:
                     response = json.dumps({"status": "error", "message": "unknown command"})

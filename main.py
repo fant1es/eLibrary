@@ -28,11 +28,12 @@ class AppController:
 
     def handle_login(self, success, user_data):
         if success:
-            print(f"Авторизация успешна! Данные: {user_data}")
+            print(f"Авторизация успешна! Роль: {user_data.get('role')}")
             self.login_window.hide()
 
-            # Теперь даем главное окно юзеру
-            self.main_window = Client(self.socket_worker)
+            # Передаем роль для соответствия отображения возможностей админа
+            user_role = user_data.get('role', 'user')
+            self.main_window = Client(self.socket_worker, user_role)
             self.main_window.show()
         else:
             # Окно логина само покажет ошибку через error_occurred

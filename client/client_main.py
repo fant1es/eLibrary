@@ -15,7 +15,7 @@ from client.socket_worker import SocketWorker
 
 
 class Client(QtWidgets.QMainWindow, clientWindow.Ui_MainWindow):
-    def __init__(self, socket_worker):
+    def __init__(self, socket_worker, user_role):
         super().__init__()
         self.setupUi(self)
 
@@ -24,6 +24,9 @@ class Client(QtWidgets.QMainWindow, clientWindow.Ui_MainWindow):
 
         self.all_books = []
         self.all_genres = []
+
+        self.user_role = user_role
+        self.setup_permissions()
 
         # --- Окна администратора ------------------------------
         # --- Окно добавления/редактирования (универсальное) ------------
@@ -88,6 +91,17 @@ class Client(QtWidgets.QMainWindow, clientWindow.Ui_MainWindow):
         self.exit_btn.clicked.connect(self.exit)
         self.exit_action.triggered.connect(self.exit)
 
+    def setup_permissions(self):
+        """Скрывает или показывает кнопки управления в зависимости от роли"""
+        is_admin = (self.user_role == "admin")
+
+        # Если не админ — скрываем кнопки
+        self.add_book_btn.setVisible(is_admin)
+        self.del_book_btn.setVisible(is_admin)
+        self.edit_book_btn.setVisible(is_admin)
+
+        if not is_admin:
+            print("Доступ ограничен: режим пользователя")
 
     def add_book_print(self):
         if self.add_book_window.isHidden():
