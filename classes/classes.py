@@ -22,6 +22,9 @@ class BookCard(QWidget):
         self.ui.author_label.setText(author)
         self.ui.summary_label.setText(summary)
         self.ui.date_label.setText("Дата издания: " + public_date.strftime("%d.%m.%Y"))
+        self.ui.genres_label.setText("Жанры: " + ", ".join(genres))
+        self.ui.rating_label.setText(f"Рейтинг: {rating}/5.0 ★")
+
         self.ui.download_label.setText(
             '<a href="download" style="color: #4CAF50; font-size: 14px; text-decoration: underline;">Скачать книгу</a>')
 

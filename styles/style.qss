@@ -238,6 +238,17 @@ QLabel a:hover {
     color: #2e7d32;
 }
 
+#genres_label {
+    color: #777777;
+    font-style: italic;
+}
+
+#rating_label {
+    color: #4CAF50;
+    font-size: 18px;
+    font-weight: bold;
+}
+
 #author_label {
     color: #777777;
     font-style: italic;
