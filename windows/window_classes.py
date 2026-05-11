@@ -399,7 +399,7 @@ class SelectBookWin(QDialog):
                 pixmap=pixmap,
                 file_path=book["file_path"]
             )
-            card.clicked_for_delete.connect(self.on_card_clicked)
+            card.card_clicked.connect(self.on_card_clicked)
             self.container_layout.addWidget(card)
 
     def on_card_clicked(self, b_id, b_name):
