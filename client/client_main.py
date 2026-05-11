@@ -3,9 +3,9 @@ import base64
 from PyQt6.QtGui import QStandardItemModel, QStandardItem, QPixmap
 from PyQt6 import QtWidgets
 from PyQt6.QtWidgets import QVBoxLayout, QMessageBox
-from PyQt6.QtCore import QByteArray, Qt
+from PyQt6.QtCore import QByteArray, Qt, QTimer
 
-# from rapidfuzz import process, fuzz
+from rapidfuzz import fuzz
 
 from classes.classes import BookCard
 from client.delegates import RangeDelegate
@@ -89,8 +89,16 @@ class Client(QtWidgets.QMainWindow, clientWindow.Ui_MainWindow):
         # Подключаем сигнал изменения модели к фильтрации
         self.tree_model.itemChanged.connect(self.apply_filters)
 
+        # --- Поиск --------------------------------------------
+        # Ждём 300 мс после последнего нажатия, чтобы не перестраивать все виджеты на каждый символ
+        self._search_timer = QTimer(self)
+        self._search_timer.setSingleShot(True)
+        self._search_timer.setInterval(300)
+        self._search_timer.timeout.connect(self.apply_filters)
+        self.search_edit.textChanged.connect(self._search_timer.start)
+
         # --- Сортировка ----------------------------------------
-        # sort_ascending хранит текущее направление: True = по возрастанию
+        # sort_ascending хранит текущее направление (True = по возрастанию)
         self.sort_ascending = True
         self.sort_combobox.currentIndexChanged.connect(self.apply_filters)
         self.reverse_sorting_btn.clicked.connect(self._toggle_sort_direction)
@@ -307,7 +315,6 @@ class Client(QtWidgets.QMainWindow, clientWindow.Ui_MainWindow):
                 rating = float(book.get("rating", 0))
                 if not (f["rating_from"] <= rating <= f["rating_to"]):
                     continue
-                print(book["rating"])
 
             except (ValueError, TypeError):
                 print(f"Ошибка рейтинга для книги {book.get('name')}")
@@ -315,7 +322,47 @@ class Client(QtWidgets.QMainWindow, clientWindow.Ui_MainWindow):
 
             filtered.append(book)
 
-        self._render_books(self._sort_books(filtered))
+        self._render_books(self._sort_books(self._fuzzy_search(filtered)))
+
+    # --- Поиск ---------------------------------------------------
+    _SEARCH_THRESHOLD = 65
+
+    def _fuzzy_search(self, books: list[dict]) -> list[dict]:
+        """Нечёткий поиск по полям название / автор / аннотация"""
+        query = self.search_edit.text().strip()
+        if not query:
+            return books
+
+        # Функция для выдачи очков поиска
+        def _score(text: str) -> float:
+            if not text:
+                return 0.0
+            return max(
+                fuzz.token_set_ratio(query, text),
+                fuzz.partial_ratio(query, text),
+            )
+
+        scored = []
+        for book in books:
+            name_score = _score(book.get("name", ""))
+            author_score = _score(book.get("author", ""))
+            summary_score = _score(book.get("summary", ""))
+
+            # Достаточно, чтобы хотя бы одно поле прошло
+            best = max(name_score, author_score, summary_score)
+            if best < self._SEARCH_THRESHOLD:
+                continue
+
+            # Взвешенная сумма
+            rank = (
+                    name_score * 1.0 +
+                    author_score * 0.9 +
+                    summary_score * 0.4
+            )
+            scored.append((rank, book))
+
+        scored.sort(key=lambda x: x[0], reverse=True)
+        return [book for _, book in scored]
 
     def _toggle_sort_direction(self):
         """Переключает направление сортировки и обновляет список."""
@@ -326,10 +373,10 @@ class Client(QtWidgets.QMainWindow, clientWindow.Ui_MainWindow):
 
     # Соответствие текста пунктов комбобокса → полю книги
     _SORT_KEY_MAP = {
-        "сортировать по имени":     "name",
-        "сортировать по авторам":    "author",
-        "сортировать по дате":      "public_date",
-        "сортировать по рейтингу":  "rating",
+        "сортировать по имени": "name",
+        "сортировать по авторам": "author",
+        "сортировать по дате": "public_date",
+        "сортировать по рейтингу": "rating",
     }
 
     def _sort_books(self, books: list[dict]) -> list[dict]:
@@ -352,6 +399,7 @@ class Client(QtWidgets.QMainWindow, clientWindow.Ui_MainWindow):
                 except (ValueError, KeyError):
                     # Книги без даты уходят в самый конец
                     return datetime.min if rev else datetime.max
+
             return sorted(books, key=_date_key, reverse=rev)
 
         elif key == "rating":
@@ -360,6 +408,7 @@ class Client(QtWidgets.QMainWindow, clientWindow.Ui_MainWindow):
                     return float(b.get("rating", 0))
                 except (ValueError, TypeError):
                     return 0.0
+
             return sorted(books, key=_rating_key, reverse=rev)
 
         return books  # fallback
