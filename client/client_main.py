@@ -327,28 +327,40 @@ class Client(QtWidgets.QMainWindow, clientWindow.Ui_MainWindow):
         self._render_books(self._sort_books(self._fuzzy_search(filtered)))
 
     # --- Поиск ---------------------------------------------------
-    _SEARCH_THRESHOLD = 65
+    _SEARCH_THRESHOLD = 72
 
     def _fuzzy_search(self, books: list[dict]) -> list[dict]:
-        """Нечёткий поиск по полям название / автор / аннотация"""
-        query = self.search_edit.text().strip()
+        """Нечёткий поиск по полям название/автор/аннотация"""
+        query = self.search_edit.text().strip().lower()
         if not query:
             return books
 
-        # Функция для выдачи очков поиска
         def _score(text: str) -> float:
+            """Для коротких полей с точным вхождением = 100"""
             if not text:
                 return 0.0
+            t = text.lower()
+            if query in t:
+                return 100.0
             return max(
-                fuzz.token_set_ratio(query, text),
-                fuzz.partial_ratio(query, text),
+                fuzz.token_set_ratio(query, t),
+                fuzz.partial_ratio(query, t),
             )
+
+        def _score_summary(text: str) -> float:
+            """Для длинной используем только token_set_ratio, кроме точного вхождения."""
+            if not text:
+                return 0.0
+            t = text.lower()
+            if query in t:
+                return 100.0
+            return fuzz.token_set_ratio(query, t)
 
         scored = []
         for book in books:
             name_score = _score(book.get("name", ""))
             author_score = _score(book.get("author", ""))
-            summary_score = _score(book.get("summary", ""))
+            summary_score = _score_summary(book.get("summary", ""))
 
             # Достаточно, чтобы хотя бы одно поле прошло
             best = max(name_score, author_score, summary_score)
