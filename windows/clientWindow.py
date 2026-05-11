@@ -118,8 +118,6 @@ class Ui_MainWindow(object):
         self.menubar.setObjectName("menubar")
         self.menu = QtWidgets.QMenu(parent=self.menubar)
         self.menu.setObjectName("menu")
-        self.menu_2 = QtWidgets.QMenu(parent=self.menubar)
-        self.menu_2.setObjectName("menu_2")
         MainWindow.setMenuBar(self.menubar)
         self.statusbar = QtWidgets.QStatusBar(parent=MainWindow)
         self.statusbar.setObjectName("statusbar")
@@ -131,7 +129,6 @@ class Ui_MainWindow(object):
         self.exit_action.setObjectName("exit_action")
         self.menu.addAction(self.exit_action)
         self.menubar.addAction(self.menu.menuAction())
-        self.menubar.addAction(self.menu_2.menuAction())
 
         self.retranslateUi(MainWindow)
         QtCore.QMetaObject.connectSlotsByName(MainWindow)
@@ -153,6 +150,5 @@ class Ui_MainWindow(object):
         self.reverse_sorting_btn.setText(_translate("MainWindow", "▲"))
         self.label.setText(_translate("MainWindow", "Вводите ключевые слова (Название, автор и т.д.):"))
         self.menu.setTitle(_translate("MainWindow", "Файл"))
-        self.menu_2.setTitle(_translate("MainWindow", "Справка"))
         self.toolBar.setWindowTitle(_translate("MainWindow", "toolBar"))
         self.exit_action.setText(_translate("MainWindow", "Выход"))

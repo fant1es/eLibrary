@@ -200,6 +200,7 @@ class Client(QtWidgets.QMainWindow, clientWindow.Ui_MainWindow):
             name = genre.get("name", str(genre)) if isinstance(genre, dict) else str(genre)
             child = QStandardItem(name)
             child.setCheckable(True)
+            child.setEditable(False)
             child.setCheckState(Qt.CheckState.Unchecked)
             self.genre_filter_item.appendRow(child)
 
@@ -222,6 +223,7 @@ class Client(QtWidgets.QMainWindow, clientWindow.Ui_MainWindow):
         for author in unique_authors:
             child = QStandardItem(author)
             child.setCheckable(True)
+            child.setEditable(False)
             child.setCheckState(
                 Qt.CheckState.Checked if author in checked_before else Qt.CheckState.Unchecked
             )
