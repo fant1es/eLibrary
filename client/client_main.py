@@ -89,6 +89,12 @@ class Client(QtWidgets.QMainWindow, clientWindow.Ui_MainWindow):
         # Подключаем сигнал изменения модели к фильтрации
         self.tree_model.itemChanged.connect(self.apply_filters)
 
+        # --- Сортировка ----------------------------------------
+        # sort_ascending хранит текущее направление: True = по возрастанию
+        self.sort_ascending = True
+        self.sort_combobox.currentIndexChanged.connect(self.apply_filters)
+        self.update_table_btn.clicked.connect(self._toggle_sort_direction)
+
         # --- Привязка событий под кнопки и триггеры ------------
         self.exit_btn.clicked.connect(self.exit)
         self.exit_action.triggered.connect(self.exit)
@@ -309,7 +315,54 @@ class Client(QtWidgets.QMainWindow, clientWindow.Ui_MainWindow):
 
             filtered.append(book)
 
-        self._render_books(filtered)
+        self._render_books(self._sort_books(filtered))
+
+    def _toggle_sort_direction(self):
+        """Переключает направление сортировки и обновляет список."""
+        self.sort_ascending = not self.sort_ascending
+        # Меняем иконку/текст кнопки, если она есть в UI
+        self.update_table_btn.setText("▲" if self.sort_ascending else "▼")
+        self.apply_filters()
+
+    # Соответствие текста пунктов комбобокса → полю книги
+    _SORT_KEY_MAP = {
+        "сортировать по имени":     "name",
+        "сортировать по авторам":    "author",
+        "сортировать по дате":      "public_date",
+        "сортировать по рейтингу":  "rating",
+    }
+
+    def _sort_books(self, books: list[dict]) -> list[dict]:
+        """Сортирует список книг по выбранному в sort_combobox полю
+        и направлению self.sort_ascending"""
+        label = self.sort_combobox.currentText().strip().lower()
+        key = self._SORT_KEY_MAP.get(label, "name")
+        rev = not self.sort_ascending
+
+        if key == "name":
+            return sorted(books, key=lambda b: b.get("name", "").lower(), reverse=rev)
+
+        elif key == "author":
+            return sorted(books, key=lambda b: b.get("author", "").lower(), reverse=rev)
+
+        elif key == "public_date":
+            def _date_key(b):
+                try:
+                    return datetime.strptime(b["public_date"], "%d.%m.%Y")
+                except (ValueError, KeyError):
+                    # Книги без даты уходят в самый конец
+                    return datetime.min if rev else datetime.max
+            return sorted(books, key=_date_key, reverse=rev)
+
+        elif key == "rating":
+            def _rating_key(b):
+                try:
+                    return float(b.get("rating", 0))
+                except (ValueError, TypeError):
+                    return 0.0
+            return sorted(books, key=_rating_key, reverse=rev)
+
+        return books  # fallback
 
     def _render_books(self, books: list[dict]):
         """Отрисовывает карточки переданного списка книг"""
