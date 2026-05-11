@@ -25,6 +25,8 @@ def get_books(db: Session) -> list[BookTable]:
 def add_book(db: Session, new_book: BookTable):
     db.add(new_book)
     db.commit()
+    # Обновляем для получения автоинкрменета на id и актуальных значений
+    db.refresh(new_book)
 
 
 def delete_book(db: Session, del_id: int):
