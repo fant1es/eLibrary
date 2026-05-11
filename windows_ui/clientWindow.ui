@@ -148,19 +148,6 @@
            </widget>
           </item>
           <item>
-           <widget class="QPushButton" name="update_table_btn">
-            <property name="minimumSize">
-             <size>
-              <width>0</width>
-              <height>47</height>
-             </size>
-            </property>
-            <property name="text">
-             <string>Обновить таблицу</string>
-            </property>
-           </widget>
-          </item>
-          <item>
            <layout class="QHBoxLayout" name="horizontalLayout_2"/>
           </item>
          </layout>
