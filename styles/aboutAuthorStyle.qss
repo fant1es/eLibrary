@@ -59,9 +59,9 @@ QWidget {
     font-style: italic;
 }
 
-/* Нижняя подпись (Минск, БНТУ, ...) */
+/* Нижняя подпись */
 #label_7 {
-    font-size: 11px;
+    font-size: 13px;
     color: #999999;
 }
 

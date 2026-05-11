@@ -3,7 +3,7 @@ import base64
 import json
 from datetime import datetime
 
-from windows import addBookWidget, aboutAuthor
+from windows import addBookWidget, aboutAuthor, aboutProgram
 from PyQt6 import QtWidgets, QtCore
 from PyQt6.QtWidgets import QFileDialog, QDialog, QVBoxLayout, QScrollArea, QWidget, QMessageBox
 from PyQt6.QtGui import QPixmap
@@ -433,4 +433,14 @@ class AboutAuthorWin(QWidget, aboutAuthor.Ui_Form):
 
     def back(self):
         self.hide()
-        
+
+
+class AboutProgramWin(QWidget, aboutProgram.Ui_Form):
+    def __init__(self):
+        super().__init__()
+        self.setupUi(self)
+
+        self.back_btn.clicked.connect(self.back)
+
+    def back(self):
+        self.hide()

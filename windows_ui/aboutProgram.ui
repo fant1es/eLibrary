@@ -1,0 +1,79 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ui version="4.0">
+ <class>Form</class>
+ <widget class="QWidget" name="Form">
+  <property name="geometry">
+   <rect>
+    <x>0</x>
+    <y>0</y>
+    <width>590</width>
+    <height>430</height>
+   </rect>
+  </property>
+  <property name="minimumSize">
+   <size>
+    <width>590</width>
+    <height>430</height>
+   </size>
+  </property>
+  <property name="maximumSize">
+   <size>
+    <width>590</width>
+    <height>430</height>
+   </size>
+  </property>
+  <property name="windowTitle">
+   <string>О программе</string>
+  </property>
+  <layout class="QVBoxLayout" name="verticalLayout">
+   <item alignment="Qt::AlignHCenter|Qt::AlignVCenter">
+    <widget class="QLabel" name="label">
+     <property name="text">
+      <string>О программе </string>
+     </property>
+    </widget>
+   </item>
+   <item alignment="Qt::AlignHCenter|Qt::AlignVCenter">
+    <widget class="QLabel" name="label_2">
+     <property name="text">
+      <string>eLibrary (Версия 1.0)</string>
+     </property>
+    </widget>
+   </item>
+   <item>
+    <widget class="QLabel" name="label_3">
+     <property name="minimumSize">
+      <size>
+       <width>0</width>
+       <height>235</height>
+      </size>
+     </property>
+     <property name="text">
+      <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p align=&quot;justify&quot;&gt;Данная программа предназначена для предоставления возможности скачать электронные книги с удалённого сервера через предоставляемый клиенту каталог.&lt;/p&gt;&lt;p align=&quot;justify&quot;&gt;Для начала работы необходимо зарегистрироваться: придумать и запомнить имя логин и пароль, которые мы надёжно будем хранить в своей базе данных для ваших будущих сеансов.&lt;/p&gt;&lt;p align=&quot;justify&quot;&gt;Чтобы скачать себе книгу, подберите интересующих авторов, жанры, дату издания и рейтинг под себя, воспользуйтесь поисковой строкой, а затем нажмите на &amp;quot;Скачать книгу&amp;quot; и выберите место на своём компьютере для ее загрузки.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+     </property>
+     <property name="scaledContents">
+      <bool>false</bool>
+     </property>
+     <property name="wordWrap">
+      <bool>true</bool>
+     </property>
+    </widget>
+   </item>
+   <item alignment="Qt::AlignHCenter">
+    <widget class="QPushButton" name="back_btn">
+     <property name="minimumSize">
+      <size>
+       <width>170</width>
+       <height>40</height>
+      </size>
+     </property>
+     <property name="text">
+      <string>Назад</string>
+     </property>
+    </widget>
+   </item>
+  </layout>
+ </widget>
+ <resources/>
+ <connections/>
+</ui>

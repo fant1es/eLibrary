@@ -11,7 +11,7 @@ from classes.classes import BookCard
 from client.delegates import RangeDelegate
 from windows import clientWindow
 from windows.window_classes import AddBookWin, SelectBookWin
-from windows.window_classes import AboutAuthorWin
+from windows.window_classes import AboutAuthorWin, AboutProgramWin
 
 
 class Client(QtWidgets.QMainWindow, clientWindow.Ui_MainWindow):
@@ -63,6 +63,9 @@ class Client(QtWidgets.QMainWindow, clientWindow.Ui_MainWindow):
         # --- Окна "Об авторе" и "О программе" ------------------
         self.about_author_window = AboutAuthorWin()
         self.about_author_btn.clicked.connect(self.about_author_print)
+
+        self.about_program_window = AboutProgramWin()
+        self.about_program_btn.clicked.connect(self.about_program_print)
 
         # --- Установка потока с сокетом ------------------------
         self.socket_worker = socket_worker
@@ -133,6 +136,16 @@ class Client(QtWidgets.QMainWindow, clientWindow.Ui_MainWindow):
                 print("Файл стилей не найден.")
 
             self.about_author_window.show()
+
+    def about_program_print(self):
+        if self.about_program_window.isHidden():
+            try:
+                with open("styles/aboutProgramStyle.qss", "r", encoding="utf-8") as file:
+                    self.about_program_window.setStyleSheet(file.read())
+            except FileNotFoundError:
+                print("Файл стилей не найден.")
+
+            self.about_program_window.show()
 
     def add_book_print(self):
         if self.add_book_window.isHidden():
