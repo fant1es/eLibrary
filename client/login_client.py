@@ -17,9 +17,9 @@ class Login(QtWidgets.QMainWindow, loginWindow.Ui_MainWindow):
     def try_login(self):
         username = self.username_edit.text()
         password = self.password_edit.text()
-        self.socket_worker.send(f"login|{username}:{password}")
+        self.socket_worker.send_json({"action": "login", "username": username, "password": password})
 
     def try_register(self):
         username = self.username_edit.text()
         password = self.password_edit.text()
-        self.socket_worker.send(f"register|{username}:{password}")
+        self.socket_worker.send_json({"action": "register", "username": username, "password": password})

@@ -1,5 +1,6 @@
 from datetime import datetime
 import base64
+import json
 from PyQt6.QtGui import QStandardItemModel, QStandardItem, QPixmap
 from PyQt6 import QtWidgets
 from PyQt6.QtWidgets import QVBoxLayout, QMessageBox
@@ -34,24 +35,24 @@ class Client(QtWidgets.QMainWindow, clientWindow.Ui_MainWindow):
         self.add_book_window = AddBookWin()
 
         self.add_book_window.book_add_requested.connect(
-            lambda payload: self.socket_worker.send(f"add_book|{payload}")
+            lambda payload: self.socket_worker.send_json({**json.loads(payload), "action": "add_book"})
         )
         self.add_book_window.book_edit_requested.connect(
-            lambda payload: self.socket_worker.send(f"edit_book|{payload}")
+            lambda payload: self.socket_worker.send_json({**json.loads(payload), "action": "edit_book"})
         )
 
         self.add_book_window.genre_add_requested.connect(
-            lambda name: self.socket_worker.send(f"add_genre|{name}")
+            lambda name: self.socket_worker.send_json({"action": "add_genre", "name": name})
         )
         self.add_book_window.genre_delete_requested.connect(
-            lambda ids: self.socket_worker.send(f"delete_genres|{','.join(map(str, ids))}")
+            lambda ids: self.socket_worker.send_json({"action": "delete_genres", "ids": ids})
         )
 
         # --- Окно удаления книги ------------------------------
         self.del_book_btn.clicked.connect(self.delete_book_print)
         self.delete_book_window = SelectBookWin(mode="delete", parent=self)
         self.delete_book_window.book_selected.connect(
-            lambda book_id: self.socket_worker.send(f"delete_book|{book_id}")
+            lambda book_id: self.socket_worker.send_json({"action": "delete_book", "id": book_id})
         )
 
         # --- Окно изменения книги ------------------------------
@@ -71,8 +72,8 @@ class Client(QtWidgets.QMainWindow, clientWindow.Ui_MainWindow):
         self.socket_worker = socket_worker
 
         # Запрашиваем необходимые данные
-        self.socket_worker.send("get_books")
-        self.socket_worker.send("get_genres")
+        self.socket_worker.send_json({"action": "get_books"})
+        self.socket_worker.send_json({"action": "get_genres"})
 
         self.socket_worker.error_occurred.connect(self.show_error)
         self.socket_worker.books_received.connect(self.on_books_received)

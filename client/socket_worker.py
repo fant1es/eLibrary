@@ -92,7 +92,11 @@ class SocketWorker(QThread):
 
     def request_download(self, file_path: str):
         """Вызывается при нажатии на "Скачать книгу" из карточки"""
-        self.send(f"download|{file_path}")
+        self.send_json({"action": "download", "file_path": file_path})
+
+    def send_json(self, data: dict):
+        """Сериализует словарь в JSON и отправляет сокетом"""
+        self.send(json.dumps(data, ensure_ascii=False))
 
     def _recv_exact(self, msg_len: int) -> bytes | None:
         """Получает точное число байт"""

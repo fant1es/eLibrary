@@ -144,210 +144,175 @@ def recv_exact(sock: socket.socket, msg_len: int) -> bytes | None:
     return bytes(buffer)
 
 
+
 def handle_client(client: socket.socket, address):
     """Цикл работы с клиентом"""
     print(f"[+] Подключился новый клиент: {address}")
 
-    # Будем хранить роль и имя пользователя для проверки уровня доступа
     session_role = "guest"
     session_username = None
 
     with client:
         while True:
             try:
-                # Читаем 4 байта как длину следующего сообщения от клиента
                 raw_len = recv_exact(client, 4)
                 if not raw_len:
                     break
 
                 message_len = int.from_bytes(raw_len, "big")
-
-                # Читаем саму команду
                 raw_data = recv_exact(client, message_len)
                 if not raw_data:
                     break
 
-                message = raw_data.decode().strip()
+                # Все входящие сообщения — JSON
+                try:
+                    data = json.loads(raw_data.decode())
+                except (UnicodeDecodeError, json.JSONDecodeError):
+                    err = json.dumps({"status": "error", "message": "Неверный формат запроса"})
+                    client.sendall(len(err.encode()).to_bytes(4, "big") + err.encode())
+                    continue
 
-                # Извлекаем тип действия, желаемый пользователем
-                action = message.split('|')[0] if '|' in message else message
+                action = data.get("action", "")
+                print(f"[{address} ({session_username or 'Гость'})] action={action!r}")
 
-                print(f"[{address} ({session_username or 'Гость'})] Получено: {message[:50]}")
-
-                # Глобальная проверка прав
+                # Глобальная проверка прав администратора
                 if action in ADMIN_ONLY_COMMANDS and session_role != "admin":
                     response = json.dumps({
                         "status": "error",
                         "message": "Отказано в доступе: требуются права администратора"
                     }, ensure_ascii=False)
 
-                # --- Публичные команды --------
-                elif message == "get_books":
+                # --- Публичные команды ----------------------------
+                elif action == "get_books":
                     response = fetch_books_json()
-                elif message == "get_genres":
+
+                elif action == "get_genres":
                     response = fetch_genres_json()
 
-                elif message.startswith("download|"):
-                    file_path = message.split("|", 1)[1].strip()
-                    response = fetch_file_json(file_path)
+                elif action == "download":
+                    response = fetch_file_json(data.get("file_path", ""))
 
-                elif message.startswith("login|"):
-                    try:
-                        # Ожидаем формат "login|username:password"
-                        credentials = message.split("|", 1)[1].strip()
-                        username, password = credentials.split(":", 1)
-
-                        with SessionLocal() as session:
-                            # Проверяем через БД
-                            user = authenticate_user(session, username, password)
-
-                            if user:
-                                # Запоминаем пользователя
-                                session_role = user.role.value if hasattr(user.role, "value") else str(user.role)
-                                session_username = user.username
-
-                                response = json.dumps({
-                                    "status": "success",
-                                    "action": "login",
-                                    "user_data": {
-                                        "username": user.username,
-                                        "role": user.role.value if hasattr(user.role, "value") else str(user.role)
-                                    }
-                                }, ensure_ascii=False)
-                            else:
-                                response = json.dumps({
-                                    "status": "error",
-                                    "action": "login",
-                                    "message": "Неверное имя пользователя или пароль"
-                                }, ensure_ascii=False)
-                    except ValueError:
-                        response = json.dumps({"status": "error", "message": "Неверный формат данных авторизации"})
-
-                elif message.startswith("register|"):
-                    try:
-                        credentials = message.split("|", 1)[1].strip()
-                        username, password = credentials.split(":", 1)
-
-                        with SessionLocal() as session:
-                            # Функция register_user должна быть реализована в crud.py
-                            # Возвращает кортеж: (Успех: bool, Объект пользователя или текст ошибки)
-                            success, result = register_user(session, username, password)
-
-                            if success:
-                                # Запоминаем пользователя
-                                session_role = result.role.value if hasattr(result.role, "value") else str(result.role)
-                                session_username = result.username
-
-                                response = json.dumps({
-                                    "status": "success",
-                                    "action": "login",  # Отправляем как login, чтобы клиент сразу вошел
-                                    "user_data": {
-                                        "username": result.username,
-                                        "role": result.role.value if hasattr(result.role, "value") else str(result.role)
-                                    }
-                                }, ensure_ascii=False)
-                            else:
-                                response = json.dumps({
-                                    "status": "error",
-                                    "action": "login",
-                                    "message": result  # Текст ошибки, например "Имя уже занято"
-                                }, ensure_ascii=False)
-                    except ValueError:
-                        response = json.dumps({"status": "error", "message": "Неверный формат данных регистрации"})
-
-                # --- Команды администратора ---
-                elif message.startswith("add_genre|"):
-                    genre_name = message.split("|", 1)[1]
+                elif action == "login":
+                    username = data.get("username", "")
+                    password = data.get("password", "")
                     with SessionLocal() as session:
-                        add_genre(session, genre_name)
-                    response = fetch_genres_json()
+                        user = authenticate_user(session, username, password)
+                        if user:
+                            session_role = user.role.value if hasattr(user.role, "value") else str(user.role)
+                            session_username = user.username
+                            response = json.dumps({
+                                "status": "success",
+                                "action": "login",
+                                "user_data": {
+                                    "username": user.username,
+                                    "role": session_role,
+                                }
+                            }, ensure_ascii=False)
+                        else:
+                            response = json.dumps({
+                                "status": "error",
+                                "action": "login",
+                                "message": "Неверное имя пользователя или пароль"
+                            }, ensure_ascii=False)
 
-                elif message.startswith("delete_genres|"):
-                    genre_ids = [int(gid) for gid in message.split("|", 1)[1].split(",")]
+                elif action == "register":
+                    username = data.get("username", "")
+                    password = data.get("password", "")
                     with SessionLocal() as session:
-                        delete_genres(session, genre_ids)
+                        success, result = register_user(session, username, password)
+                        if success:
+                            session_role = result.role.value if hasattr(result.role, "value") else str(result.role)
+                            session_username = result.username
+                            response = json.dumps({
+                                "status": "success",
+                                "action": "login",
+                                "user_data": {
+                                    "username": result.username,
+                                    "role": session_role,
+                                }
+                            }, ensure_ascii=False)
+                        else:
+                            response = json.dumps({
+                                "status": "error",
+                                "action": "login",
+                                "message": result
+                            }, ensure_ascii=False)
+
+                # --- Команды администратора ----------------------
+                elif action == "add_genre":
+                    with SessionLocal() as session:
+                        add_genre(session, data.get("name", ""))
                     response = fetch_genres_json()
 
-                elif message.startswith("add_book|"):
-                    try:
-                        payload = json.loads(message.split("|", 1)[1])
+                elif action == "delete_genres":
+                    ids = [int(i) for i in data.get("ids", [])]
+                    with SessionLocal() as session:
+                        delete_genres(session, ids)
+                    response = fetch_genres_json()
 
-                        # Сохраняем файл книги
-                        book_filename = payload["book_filename"]
+                elif action == "add_book":
+                    try:
+                        book_filename = data["book_filename"]
                         with open(os.path.join(BOOKS_DIR, book_filename), "wb") as f:
-                            f.write(base64.b64decode(payload["book_data"]))
+                            f.write(base64.b64decode(data["book_data"]))
 
-                        # Сохраняем обложку (опционально)
                         cover_filename = None
-                        if payload.get("cover_data") and payload.get("cover_filename"):
-                            cover_filename = payload["cover_filename"]
+                        if data.get("cover_data") and data.get("cover_filename"):
+                            cover_filename = data["cover_filename"]
                             with open(os.path.join(COVERS_DIR, cover_filename), "wb") as f:
-                                f.write(base64.b64decode(payload["cover_data"]))
+                                f.write(base64.b64decode(data["cover_data"]))
 
-                        # Добавляем книгу в базу данных
                         with SessionLocal() as session:
-                            genres = [get_genre(session, gid) for gid in payload.get("genre_ids", [])]
-                            genres = [g for g in genres if g]
-
+                            genres = [get_genre(session, gid) for gid in data.get("genre_ids", [])]
                             book = BookTable(
-                                name=payload["name"],
-                                author=payload["author"],
-                                summary=payload["summary"],
-                                rating=payload["rating"],
-                                public_date=datetime.strptime(payload["public_date"], "%d.%m.%Y").date(),
-                                genres=genres,
+                                name=data["name"],
+                                author=data["author"],
+                                summary=data["summary"],
+                                rating=data["rating"],
+                                public_date=datetime.strptime(data["public_date"], "%d.%m.%Y").date(),
+                                genres=[g for g in genres if g],
                                 file_path=book_filename,
                                 cover_path=cover_filename,
                             )
                             add_book(session, book)
-
                         response = fetch_books_json()
-
                     except Exception as e:
                         print(f"[Ошибка добавления книги] {e}")
                         response = json.dumps({"status": "error", "message": f"Ошибка при добавлении книги: {e}"},
                                               ensure_ascii=False)
 
-                elif message.startswith("delete_book|"):
-                    book_id = int(message.split("|", 1)[1])
+                elif action == "delete_book":
+                    book_id = int(data.get("id", 0))
                     with SessionLocal() as session:
-                        # Удаляем и проверяем, что действительно удалили внутри метода
                         success = delete_book(session, book_id)
+                    response = fetch_books_json() if success else json.dumps(
+                        {"status": "error", "message": "Книга не найдена"}, ensure_ascii=False)
 
-                    if success:
-                        response = fetch_books_json()
-                    else:
-                        response = json.dumps({"status": "error", "message": "Книга не найдена"},
-                                              ensure_ascii=False)
-
-                elif message.startswith("edit_book|"):
+                elif action == "edit_book":
                     try:
-                        payload = json.loads(message.split("|", 1)[1])
-
                         book_filename = None
-                        if payload.get("book_data") and payload.get("book_filename"):
-                            book_filename = payload["book_filename"]
+                        if data.get("book_data") and data.get("book_filename"):
+                            book_filename = data["book_filename"]
                             with open(os.path.join(BOOKS_DIR, book_filename), "wb") as f:
-                                f.write(base64.b64decode(payload["book_data"]))
+                                f.write(base64.b64decode(data["book_data"]))
 
                         cover_filename = None
-                        if payload.get("cover_data") and payload.get("cover_filename"):
-                            cover_filename = payload["cover_filename"]
+                        if data.get("cover_data") and data.get("cover_filename"):
+                            cover_filename = data["cover_filename"]
                             with open(os.path.join(COVERS_DIR, cover_filename), "wb") as f:
-                                f.write(base64.b64decode(payload["cover_data"]))
+                                f.write(base64.b64decode(data["cover_data"]))
 
                         with SessionLocal() as session:
-                            success = update_book(session, payload, book_filename, cover_filename)
-
+                            success = update_book(session, data, book_filename, cover_filename)
                         response = fetch_books_json() if success else json.dumps(
                             {"status": "error", "message": "Книга не найдена"}, ensure_ascii=False)
-
                     except Exception as e:
-                        print(f"[Ошибка изменения] {e}")
+                        print(f"[Ошибка изменения книги] {e}")
                         response = json.dumps({"status": "error", "message": str(e)}, ensure_ascii=False)
 
                 else:
-                    response = json.dumps({"status": "error", "message": "unknown command"})
+                    response = json.dumps({"status": "error", "message": f"Неизвестная команда: {action!r}"},
+                                          ensure_ascii=False)
 
                 encoded = response.encode()
                 client.sendall(len(encoded).to_bytes(4, "big") + encoded)
