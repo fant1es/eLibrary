@@ -93,7 +93,7 @@ class Client(QtWidgets.QMainWindow, clientWindow.Ui_MainWindow):
         # sort_ascending хранит текущее направление: True = по возрастанию
         self.sort_ascending = True
         self.sort_combobox.currentIndexChanged.connect(self.apply_filters)
-        self.update_table_btn.clicked.connect(self._toggle_sort_direction)
+        self.reverse_sorting_btn.clicked.connect(self._toggle_sort_direction)
 
         # --- Привязка событий под кнопки и триггеры ------------
         self.exit_btn.clicked.connect(self.exit)
@@ -321,7 +321,7 @@ class Client(QtWidgets.QMainWindow, clientWindow.Ui_MainWindow):
         """Переключает направление сортировки и обновляет список."""
         self.sort_ascending = not self.sort_ascending
         # Меняем иконку/текст кнопки, если она есть в UI
-        self.update_table_btn.setText("▲" if self.sort_ascending else "▼")
+        self.reverse_sorting_btn.setText("▲" if self.sort_ascending else "▼")
         self.apply_filters()
 
     # Соответствие текста пунктов комбобокса → полю книги
