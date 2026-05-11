@@ -11,6 +11,7 @@ from classes.classes import BookCard
 from client.delegates import RangeDelegate
 from windows import clientWindow
 from windows.window_classes import AddBookWin, SelectBookWin
+from windows.window_classes import AboutAuthorWin
 
 
 class Client(QtWidgets.QMainWindow, clientWindow.Ui_MainWindow):
@@ -59,7 +60,11 @@ class Client(QtWidgets.QMainWindow, clientWindow.Ui_MainWindow):
         # Вызываем переход к универсальному окну
         self.edit_book_window.book_selected.connect(self.on_book_selected_for_edit)
 
-        # --- Установка потока с сокетом -----------------------
+        # --- Окна "Об авторе" и "О программе" ------------------
+        self.about_author_window = AboutAuthorWin()
+        self.about_author_btn.clicked.connect(self.about_author_print)
+
+        # --- Установка потока с сокетом ------------------------
         self.socket_worker = socket_worker
 
         # Запрашиваем необходимые данные
@@ -118,6 +123,16 @@ class Client(QtWidgets.QMainWindow, clientWindow.Ui_MainWindow):
 
         if not is_admin:
             print("Доступ ограничен: режим пользователя")
+
+    def about_author_print(self):
+        if self.about_author_window.isHidden():
+            try:
+                with open("styles/aboutAuthorStyle.qss", "r", encoding="utf-8") as file:
+                    self.about_author_window.setStyleSheet(file.read())
+            except FileNotFoundError:
+                print("Файл стилей не найден.")
+
+            self.about_author_window.show()
 
     def add_book_print(self):
         if self.add_book_window.isHidden():

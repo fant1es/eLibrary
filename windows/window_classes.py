@@ -3,7 +3,7 @@ import base64
 import json
 from datetime import datetime
 
-from windows import addBookWidget
+from windows import addBookWidget, aboutAuthor
 from PyQt6 import QtWidgets, QtCore
 from PyQt6.QtWidgets import QFileDialog, QDialog, QVBoxLayout, QScrollArea, QWidget, QMessageBox
 from PyQt6.QtGui import QPixmap
@@ -415,3 +415,22 @@ class SelectBookWin(QDialog):
             # Если режим edit, просто передаем выбранную книгу дальше
             self.book_selected.emit(b_id)
             self.accept()
+
+
+class AboutAuthorWin(QWidget, aboutAuthor.Ui_Form):
+    def __init__(self):
+        super().__init__()
+        self.setupUi(self)
+
+        # Пересчитываем путь от __file__.
+        _base = os.path.dirname(os.path.abspath(__file__))
+        _photo = os.path.normpath(os.path.join(_base, "..", "content", "photos", "author.jpg"))
+        _pix = QPixmap(_photo)
+        if not _pix.isNull():
+            self.label_4.setPixmap(_pix)
+
+        self.back_btn.clicked.connect(self.back)
+
+    def back(self):
+        self.hide()
+        
