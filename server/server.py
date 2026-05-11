@@ -21,14 +21,14 @@ BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 COVERS_DIR = os.path.join(BASE_DIR, os.getenv("COVERS_DIR", "content/covers"))
 BOOKS_DIR = os.path.join(BASE_DIR, os.getenv("BOOKS_DIR", "content/books"))
 
-# Список команд, требующих прав администратора
-ADMIN_ONLY_COMMANDS = [
+# Множество команд, требующих прав администратора.
+ADMIN_ONLY_COMMANDS: frozenset[str] = frozenset({
     "add_genre",
     "delete_genres",
     "add_book",
     "delete_book",
-    "edit_book"
-]
+    "edit_book",
+})
 
 
 def fetch_file_json(file_path: str) -> str:
@@ -376,3 +376,4 @@ def start_server():
 
 if __name__ == "__main__":
     start_server()
+    
