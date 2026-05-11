@@ -201,16 +201,6 @@ class Client(QtWidgets.QMainWindow, clientWindow.Ui_MainWindow):
 
     # --- Работа с книгами --------------------------------------
     def on_books_received(self, books: list[dict]):
-        # Предварительная обработка обложек для быстрой отрисовки книг
-        for book in books:
-            if book.get("cover_pic"):
-                pix = QPixmap()
-                pix.loadFromData(QByteArray(base64.b64decode(book["cover_pic"])))
-                book["cached_pixmap"] = pix
-            else:
-                # Заглушка
-                book["cached_pixmap"] = QPixmap()
-
         self.all_books = books.copy()
         # Обновляем список авторов в фильтре
         self._update_author_filters(self.all_books)
@@ -481,7 +471,7 @@ class Client(QtWidgets.QMainWindow, clientWindow.Ui_MainWindow):
                 genres=book["genres"],
                 summary=book["summary"],
                 file_path=book["file_path"],
-                pixmap=book.get("cached_pixmap", QPixmap())
+                pixmap=pixmap
             )
             book_card.download_requested.connect(self.socket_worker.request_download)
             layout.addWidget(book_card)
