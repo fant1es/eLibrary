@@ -20,6 +20,8 @@ class SocketWorker(QThread):
     genres_received = pyqtSignal(list)
     file_received = pyqtSignal(str, bytes)
 
+    login_result = pyqtSignal(bool, dict)  # (Успех: True/False, Данные пользователя)
+
     error_occurred = pyqtSignal(str)
 
     HOST = os.getenv("SERVER_HOST", "127.0.0.1")
@@ -57,8 +59,13 @@ class SocketWorker(QThread):
                 # Проверка статуса и типа ответа
                 if isinstance(json_data, dict):
                     status = json_data.get("status")
+                    action = json_data.get("action", "")
+
                     if status == "error":
-                        self.error_occurred.emit(json_data["message"])
+                        self.error_occurred.emit(json_data.get("message", "Неизвестная ошибка"))
+                        # Если ошибка связана с логином — уведомляем контроллер
+                        if action == "login":
+                            self.login_result.emit(False, {})
 
                     elif status == "success":
                         action = json_data.get("action", "books")
@@ -70,6 +77,10 @@ class SocketWorker(QThread):
                             filename = json_data["filename"]
                             file_bytes = base64.b64decode(json_data["file_data"])
                             self.file_received.emit(filename, file_bytes)
+                        elif action == "login":
+                            # Здесь мы уже внутри ветки status == "success",
+                            # поэтому повторная проверка не нужна
+                            self.login_result.emit(True, json_data.get("user_data", {}))
 
         except ConnectionRefusedError:
             self.error_occurred.emit("Сервер недоступен")
@@ -83,7 +94,11 @@ class SocketWorker(QThread):
 
     def request_download(self, file_path: str):
         """Вызывается при нажатии на "Скачать книгу" из карточки"""
-        self.send(f"download|{file_path}")
+        self.send_json({"action": "download", "file_path": file_path})
+
+    def send_json(self, data: dict):
+        """Сериализует словарь в JSON и отправляет сокетом"""
+        self.send(json.dumps(data, ensure_ascii=False))
 
     def _recv_exact(self, msg_len: int) -> bytes | None:
         """Получает точное число байт"""

@@ -3,7 +3,7 @@ import base64
 import json
 from datetime import datetime
 
-from windows import addBookWidget
+from windows import addBookWidget, aboutAuthor, aboutProgram
 from PyQt6 import QtWidgets, QtCore
 from PyQt6.QtWidgets import QFileDialog, QDialog, QVBoxLayout, QScrollArea, QWidget, QMessageBox
 from PyQt6.QtGui import QPixmap
@@ -184,10 +184,13 @@ class AddBookWin(QtWidgets.QWidget, addBookWidget.Ui_addBookWidget):
 
         # Отдельный вывод всех ошибок
         if errors:
-            QtWidgets.QMessageBox.warning(
-                self, "Ошибки заполнения",
-                "\n".join(f"• {e}" for e in errors)
-            )
+            msg = QMessageBox()
+            msg.setWindowTitle("Ошибка!")
+            msg.setObjectName("ErrorBox")  # <-- Важный момент
+            msg.setIcon(QMessageBox.Icon.Warning)
+            msg.setText("Ошибки заполнения:\n" +
+                "\n".join(f"• {e}" for e in errors))
+            msg.exec()
             return None
 
         # Автоисправление поля в интерфейсе
@@ -233,6 +236,9 @@ class AddBookWin(QtWidgets.QWidget, addBookWidget.Ui_addBookWidget):
         dialog = QtWidgets.QDialog()
         dialog.setWindowTitle("Предпросмотр карточки")
         dialog.setWindowFlags(QtCore.Qt.WindowType.WindowCloseButtonHint | QtCore.Qt.WindowType.WindowTitleHint)
+
+        with open("styles/style.qss", "r", encoding="utf-8") as file:
+            dialog.setStyleSheet(file.read())
 
         dialog.setFixedWidth(800)
         dialog.setFixedHeight(450)
@@ -396,7 +402,7 @@ class SelectBookWin(QDialog):
                 pixmap=pixmap,
                 file_path=book["file_path"]
             )
-            card.clicked_for_delete.connect(self.on_card_clicked)
+            card.card_clicked.connect(self.on_card_clicked)
             self.container_layout.addWidget(card)
 
     def on_card_clicked(self, b_id, b_name):
@@ -412,3 +418,32 @@ class SelectBookWin(QDialog):
             # Если режим edit, просто передаем выбранную книгу дальше
             self.book_selected.emit(b_id)
             self.accept()
+
+
+class AboutAuthorWin(QWidget, aboutAuthor.Ui_Form):
+    def __init__(self):
+        super().__init__()
+        self.setupUi(self)
+
+        # Пересчитываем путь от __file__.
+        _base = os.path.dirname(os.path.abspath(__file__))
+        _photo = os.path.normpath(os.path.join(_base, "..", "content", "photos", "author.jpg"))
+        _pix = QPixmap(_photo)
+        if not _pix.isNull():
+            self.label_4.setPixmap(_pix)
+
+        self.back_btn.clicked.connect(self.back)
+
+    def back(self):
+        self.hide()
+
+
+class AboutProgramWin(QWidget, aboutProgram.Ui_Form):
+    def __init__(self):
+        super().__init__()
+        self.setupUi(self)
+
+        self.back_btn.clicked.connect(self.back)
+
+    def back(self):
+        self.hide()

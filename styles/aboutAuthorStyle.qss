@@ -1,0 +1,89 @@
+/* ==============================================
+   Окно "Об авторе"
+   ============================================== */
+
+QWidget {
+    background-color: #F8FBF8;
+    font-family: "Segoe UI", Arial, sans-serif;
+    color: #333333;
+}
+
+/* ==============================================
+   Заголовок "Об авторе" (#label)
+   ============================================== */
+#label {
+    font-size: 24px;
+    font-weight: bold;
+    color: #2e7d32;
+    padding: 8px 0px 4px 0px;
+}
+
+/* ==============================================
+   Фото автора (#label_4)
+   ============================================== */
+#label_4 {
+    border: 2px solid #c8e6c9;
+    border-radius: 8px;
+    background-color: #ffffff;
+    padding: 2px;
+}
+
+/* ==============================================
+   Информационные строки
+   ============================================== */
+
+/* Имя автора */
+#label_2 {
+    font-size: 18px;
+    font-weight: bold;
+    color: #2e7d32;
+}
+
+/* Группа */
+#label_3 {
+    font-size: 15px;
+    color: #555555;
+}
+
+/* GitHub */
+#label_5 {
+    font-size: 15px;
+    color: #4CAF50;
+    font-style: italic;
+}
+
+/* Email */
+#label_6 {
+    font-size: 15px;
+    color: #4CAF50;
+    font-style: italic;
+}
+
+/* Нижняя подпись */
+#label_7 {
+    font-size: 13px;
+    color: #999999;
+}
+
+/* ==============================================
+   Кнопка "Назад" (#back_btn)
+   ============================================== */
+#back_btn {
+    background-color: #a5d6a7;
+    color: #2e7d32;
+    border: none;
+    border-radius: 6px;
+    padding: 8px 20px;
+    font-size: 13px;
+    font-weight: bold;
+}
+
+#back_btn:hover {
+    background-color: #81c784;
+    color: #1b5e20;
+}
+
+#back_btn:pressed {
+    background-color: #66bb6a;
+    color: #ffffff;
+}

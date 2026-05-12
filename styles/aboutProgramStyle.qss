@@ -1,0 +1,118 @@
+/* ==============================================
+   Общие настройки окна "О программе"
+   ==============================================
+*/
+QWidget {
+    background-color: #F8FBF8; /* Очень светлый зеленовато-серый фон */
+    color: #333333;             /* Темно-серый текст для мягкого контраста */
+    font-family: "Segoe UI", Arial, sans-serif;
+    font-size: 13px;
+}
+
+/* ==============================================
+   Все QLabel (общий базовый стиль)
+   ==============================================
+*/
+QLabel {
+    color: #333333;
+    background-color: transparent;
+}
+
+/* ==============================================
+   Заголовок окна — "О программе"
+   label (objectName: "label")
+   ==============================================
+*/
+#label {
+    font-size: 22px;
+    font-weight: bold;
+    color: #2e7d32;             /* Темно-зеленый, как заголовки таблиц */
+    padding-top: 10px;
+    padding-bottom: 2px;
+}
+
+/* ==============================================
+   Подзаголовок — "eLibrary (Версия 1.0)"
+   label_2 (objectName: "label_2")
+   ==============================================
+*/
+#label_2 {
+    font-size: 14px;
+    font-weight: bold;
+    color: #4CAF50;             /* Основной зеленый */
+    padding-bottom: 10px;
+}
+
+/* ==============================================
+   Основной текст описания
+   label_3 (objectName: "label_3")
+   ==============================================
+*/
+#label_3 {
+    font-size: 13px;
+    color: #444444;
+    line-height: 1.5;
+    background-color: #ffffff;
+    border: 1px solid #e0e0e0;
+    border-radius: 8px;
+    padding: 14px 16px;
+}
+
+/* ==============================================
+   Кнопка "Назад"
+   back_btn (objectName: "back_btn")
+   ==============================================
+*/
+#back_btn {
+    background-color: #4CAF50; /* Основной зеленый */
+    color: white;
+    border: none;
+    border-radius: 6px;
+    padding: 8px 16px;
+    font-weight: bold;
+    font-size: 13px;
+    min-width: 170px;
+    min-height: 40px;
+    margin-top: 8px;
+    margin-bottom: 10px;
+}
+
+#back_btn:hover {
+    background-color: #45a049; /* Чуть темнее при наведении */
+}
+
+#back_btn:pressed {
+    background-color: #3e8e41; /* Еще темнее при нажатии */
+}
+
+#back_btn:disabled {
+    background-color: #c8e6c9; /* Бледный зеленый для неактивной кнопки */
+    color: #ffffff;
+}
+
+/* ==============================================
+   Скроллбар (на случай прокрутки текста)
+   ==============================================
+*/
+QScrollBar:vertical {
+    border: none;
+    background: #f0f0f0;
+    width: 10px;
+    border-radius: 5px;
+    margin: 0px;
+}
+
+QScrollBar::handle:vertical {
+    background: #a5d6a7;
+    min-height: 20px;
+    border-radius: 5px;
+}
+
+QScrollBar::handle:vertical:hover {
+    background: #4CAF50;
+}
+
+QScrollBar::add-line:vertical,
+QScrollBar::sub-line:vertical {
+    height: 0px;
+}

@@ -88,31 +88,54 @@
          </property>
          <layout class="QVBoxLayout" name="verticalLayout">
           <item>
-           <widget class="QComboBox" name="sort_combobox">
-            <property name="currentText">
-             <string>Сортировать по имени</string>
-            </property>
+           <layout class="QHBoxLayout" name="horizontalLayout_3">
             <item>
-             <property name="text">
-              <string>Сортировать по имени</string>
-             </property>
+             <widget class="QComboBox" name="sort_combobox">
+              <property name="currentText">
+               <string>Сортировать по имени</string>
+              </property>
+              <item>
+               <property name="text">
+                <string>Сортировать по имени</string>
+               </property>
+              </item>
+              <item>
+               <property name="text">
+                <string>Сортировать по авторам</string>
+               </property>
+              </item>
+              <item>
+               <property name="text">
+                <string>Сортировать по дате</string>
+               </property>
+              </item>
+              <item>
+               <property name="text">
+                <string>Сортировать по рейтингу</string>
+               </property>
+              </item>
+             </widget>
             </item>
             <item>
-             <property name="text">
-              <string>Сортировать по авторам</string>
-             </property>
+             <widget class="QPushButton" name="reverse_sorting_btn">
+              <property name="sizePolicy">
+               <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
+                <horstretch>0</horstretch>
+                <verstretch>0</verstretch>
+               </sizepolicy>
+              </property>
+              <property name="maximumSize">
+               <size>
+                <width>45</width>
+                <height>16777215</height>
+               </size>
+              </property>
+              <property name="text">
+               <string>▲</string>
+              </property>
+             </widget>
             </item>
-            <item>
-             <property name="text">
-              <string>Сортировать по дате</string>
-             </property>
-            </item>
-            <item>
-             <property name="text">
-              <string>Сортировать по рейтингу</string>
-             </property>
-            </item>
-           </widget>
+           </layout>
           </item>
           <item>
            <widget class="QTreeView" name="filter_tree">
@@ -121,19 +144,6 @@
               <width>0</width>
               <height>0</height>
              </size>
-            </property>
-           </widget>
-          </item>
-          <item>
-           <widget class="QPushButton" name="update_table_btn">
-            <property name="minimumSize">
-             <size>
-              <width>0</width>
-              <height>47</height>
-             </size>
-            </property>
-            <property name="text">
-             <string>Обновить таблицу</string>
             </property>
            </widget>
           </item>
@@ -219,13 +229,7 @@
     </property>
     <addaction name="exit_action"/>
    </widget>
-   <widget class="QMenu" name="menu_2">
-    <property name="title">
-     <string>Справка</string>
-    </property>
-   </widget>
    <addaction name="menu"/>
-   <addaction name="menu_2"/>
   </widget>
   <widget class="QStatusBar" name="statusbar"/>
   <widget class="QToolBar" name="toolBar">

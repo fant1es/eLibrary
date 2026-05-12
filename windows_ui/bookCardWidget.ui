@@ -66,6 +66,9 @@
        <property name="text">
         <string>Автор</string>
        </property>
+       <property name="margin">
+        <number>0</number>
+       </property>
       </widget>
      </item>
      <item>
@@ -80,6 +83,26 @@
        </property>
        <property name="wordWrap">
         <bool>true</bool>
+       </property>
+      </widget>
+     </item>
+     <item>
+      <widget class="QLabel" name="genres_label">
+       <property name="text">
+        <string>Жанры</string>
+       </property>
+      </widget>
+     </item>
+     <item>
+      <widget class="QLabel" name="rating_label">
+       <property name="maximumSize">
+        <size>
+         <width>16777215</width>
+         <height>30</height>
+        </size>
+       </property>
+       <property name="text">
+        <string>Рейтинг</string>
        </property>
       </widget>
      </item>

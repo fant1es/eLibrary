@@ -1,9 +1,12 @@
 from datetime import date
+
+import sqlalchemy
 from sqlalchemy.orm import DeclarativeBase, mapped_column, Mapped, relationship, sessionmaker
 from sqlalchemy import String, Text, Date, Float, Table, Column, ForeignKey, create_engine
 from urllib.parse import quote_plus
 import os
 from dotenv import load_dotenv
+from enum import Enum
 
 # Загружаем переменные из .env в систему
 load_dotenv()
@@ -71,6 +74,24 @@ class BookTable(Base):
         book_date = self.public_date.strftime("%d.%m.%Y")
         return (f"[Книга #{self.id!r}: {self.name!r},"
                 f" Автор: {self.author!r}, Дата издания: {book_date}")
+
+
+# Роли для пользователя
+class UserRole(str, Enum):
+    user = "user"
+    admin = "admin"
+
+
+# Класс для работы с пользователями
+class UserTable(Base):
+    __tablename__ = "users"
+
+    id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
+    username: Mapped[str] = mapped_column(String(40), nullable=False)
+    password_hash: Mapped[str] = mapped_column(String(), nullable=False)
+    role: Mapped[UserRole] = mapped_column(sqlalchemy.Enum(UserRole, name="user_role"),
+                                           default=UserRole.user,
+                                           nullable=False)
 
 
 def init_db():

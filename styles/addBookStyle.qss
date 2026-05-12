@@ -80,11 +80,13 @@ QListWidget {
     border-radius: 6px;
     outline: none;
     font-size: 12px;
+    color: #333333;
 }
 
 QListWidget::item {
     padding: 3px;
     border-bottom: 1px solid #f0f0f0;
+    color: #333333;
 }
 
 QListWidget::item:selected {
@@ -131,6 +133,24 @@ QCalendarWidget QToolButton::menu-indicator {
     image: none;
 }
 
+/* Всплывающий список месяцев/лет */
+QCalendarWidget QMenu {
+    background-color: #ffffff;
+    border: 1px solid #c8e6c9;
+    color: #333333;
+    font-size: 11px;
+}
+
+QCalendarWidget QMenu::item {
+    color: #333333;
+    padding: 4px 16px;
+}
+
+QCalendarWidget QMenu::item:selected {
+    background-color: #c8e6c9;
+    color: #2e7d32;
+}
+
 QCalendarWidget QAbstractItemView:enabled {
     background-color: #ffffff;
     color: #333333;
@@ -175,4 +195,18 @@ QScrollBar::handle:vertical {
 
 QScrollBar::handle:vertical:hover {
     background: #4CAF50;
+}
+
+#ErrorBox {
+    background-color: #424242; /* Темно-серый фон */
+}
+
+#ErrorBox QLabel {
+    color: #ffffff;            /* Белый текст */
+    font-size: 13px;
+}
+
+#ErrorBox QPushButton {
+    background-color: #ffffff;
+    color: #333333;
 }

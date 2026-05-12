@@ -2,8 +2,9 @@ from datetime import datetime
 from sqlalchemy.orm import Session, selectinload
 from sqlalchemy import select
 from .database import BookTable, GenreTable
-
+from .database import UserTable, UserRole
 import os
+import bcrypt
 from dotenv import load_dotenv
 
 load_dotenv()
@@ -24,6 +25,8 @@ def get_books(db: Session) -> list[BookTable]:
 def add_book(db: Session, new_book: BookTable):
     db.add(new_book)
     db.commit()
+    # Обновляем для получения автоинкрменета на id и актуальных значений
+    db.refresh(new_book)
 
 
 def delete_book(db: Session, del_id: int):
@@ -104,3 +107,42 @@ def delete_genres(db: Session, genre_ids: list[int]):
         if genre:
             db.delete(genre)
     db.commit()
+
+
+def authenticate_user(session, username, password):
+    user = session.query(UserTable).filter(UserTable.username == username).first()
+
+    if user:
+        # bcrypt.checkpw ожидает байты, поэтому используем .encode()
+        password_bytes = password.encode('utf-8')
+        hashed_bytes = user.password_hash.encode('utf-8') if isinstance(user.password_hash, str) else user.password_hash
+
+        if bcrypt.checkpw(password_bytes, hashed_bytes):
+            return user
+    return None
+
+
+def register_user(session, username, password):
+    # Проверяем, существует ли пользователь
+    existing_user = session.query(UserTable).filter(UserTable.username == username).first()
+    if existing_user:
+        return False, "Пользователь с таким именем уже существует"
+
+    try:
+        # Генерируем соль для пароля
+        salt = bcrypt.gensalt()
+        hashed_password = bcrypt.hashpw(password.encode('utf-8'), salt)
+
+        new_user = UserTable(
+            username=username,
+            password_hash=hashed_password.decode('utf-8'),
+            role=UserRole.user
+        )
+        session.add(new_user)
+        session.commit()
+        session.refresh(new_user)
+        return True, new_user
+
+    except Exception as e:
+        session.rollback()
+        return False, f"Ошибка при регистрации: {e}"

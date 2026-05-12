@@ -1,0 +1,76 @@
+/* Основной фон окна — теперь принудительно белый */
+#centralwidget {
+    background-color: #ffffff;
+    font-family: "Segoe UI", Arial, sans-serif;
+}
+
+/* Приветственный заголовок "Добро пожаловать" */
+#label {
+    font-size: 24px;
+    font-weight: bold;
+    color: #2e7d32; /* Темно-зеленый */
+    margin-bottom: 10px;
+}
+
+/* Метки "Введите имя/пароль" — делаем их тоже зелеными, чтобы не терялись */
+QLabel {
+    font-size: 14px;
+    color: #2e7d32;
+    background-color: transparent;
+}
+
+/* Поля ввода (Имя пользователя и Пароль) */
+QLineEdit {
+    background-color: #ffffff;
+    /* Усиливаем границу, чтобы поле не сливалось с белым фоном */
+    border: 2px solid #e0e0e0;
+    border-radius: 4px;
+    padding: 5px;
+    font-size: 14px;
+    min-height: 25px;
+    /* Цвет вводимого текста как у заголовка */
+    color: #2e7d32;
+}
+
+/* Эффект при клике в поле ввода */
+QLineEdit:focus {
+    /* Делаем границу ярко-зеленой при наборе текста */
+    border: 2px solid #4CAF50;
+    background-color: #f9fff9; /* Легкий оттенок, чтобы выделить поле */
+}
+
+/* Общий стиль для кнопок */
+QPushButton {
+    color: white;
+    font-weight: bold;
+    font-size: 16px;
+    border-radius: 6px;
+    padding: 10px;
+}
+
+/* Кнопка "Войти" */
+#login_btn {
+    background-color: #4CAF50;
+}
+
+#login_btn:hover {
+    background-color: #45a049;
+}
+
+#login_btn:pressed {
+    background-color: #3e8e41;
+}
+
+/* Кнопка "Регистрация" */
+#register_btn {
+    background-color: #a5d6a7;
+    color: #2e7d32;
+}
+
+#register_btn:hover {
+    background-color: #81c784;
+}
+
+#register_btn:pressed {
+    background-color: #3e8e41;
+}

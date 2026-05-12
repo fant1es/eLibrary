@@ -22,6 +22,9 @@ class BookCard(QWidget):
         self.ui.author_label.setText(author)
         self.ui.summary_label.setText(summary)
         self.ui.date_label.setText("Дата издания: " + public_date.strftime("%d.%m.%Y"))
+        self.ui.genres_label.setText("Жанры: " + ", ".join(genres))
+        self.ui.rating_label.setText(f"Рейтинг: {rating}/5.0 ★")
+
         self.ui.download_label.setText(
             '<a href="download" style="color: #4CAF50; font-size: 14px; text-decoration: underline;">Скачать книгу</a>')
 
@@ -31,8 +34,8 @@ class BookCard(QWidget):
 
 class SelectableBookCard(BookCard):
     """Карточка книги для выбора (удаления или изменения)"""
-    # Сигнал передает ID книги и её название для подтверждения
-    clicked_for_delete = pyqtSignal(int, str)
+    # Сигнал передает ID книги и её название — универсально для любого действия
+    card_clicked = pyqtSignal(int, str)
 
     def __init__(self, book_id: int, name: str, *args, **kwargs):
         super().__init__(name=name, *args, **kwargs)
@@ -47,4 +50,4 @@ class SelectableBookCard(BookCard):
 
     def mousePressEvent(self, event):
         if event.button() == QtCore.Qt.MouseButton.LeftButton:
-            self.clicked_for_delete.emit(self.book_id, self.book_name)
+            self.card_clicked.emit(self.book_id, self.book_name)
