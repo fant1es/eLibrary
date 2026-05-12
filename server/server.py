@@ -13,6 +13,7 @@ from database.crud import get_books, add_book, delete_book, update_book
 from database.crud import authenticate_user, register_user
 from database.database import SessionLocal, init_db
 from database.database import BookTable
+from server.logger import get_logger, ClientLoggerAdapter
 
 load_dotenv()
 SERVER_HOST = os.getenv("SERVER_HOST", "127.0.0.1")
@@ -29,6 +30,8 @@ ADMIN_ONLY_COMMANDS: frozenset[str] = frozenset({
     "delete_book",
     "edit_book",
 })
+
+logger = get_logger()
 
 
 def fetch_file_json(file_path: str) -> str:
@@ -60,7 +63,6 @@ def fetch_books_json() -> str:
             result = []
             for b in books:
                 try:
-                    # Формируем дату безопасно
                     p_date = b.public_date.strftime("%d.%m.%Y") if b.public_date else "Дата неизвестна"
 
                     result.append({
@@ -75,8 +77,7 @@ def fetch_books_json() -> str:
                         "file_path": b.file_path
                     })
                 except Exception as e:
-                    print(f"Ошибка при обработке книги {getattr(b, 'id', 'unknown')}: {e}")
-                    # Проблемную книгу пропускаем, отдаем следующие
+                    logger.error(f"Ошибка при обработке книги id={getattr(b, 'id', 'unknown')}: {e}", exc_info=True)
                     continue
 
         return json.dumps({
@@ -85,9 +86,8 @@ def fetch_books_json() -> str:
             "data": result
         }, ensure_ascii=False)
 
-    # Если упала база или весь процесс
     except Exception as e:
-        print(f"[Критическая ошибка сервера] {e}")
+        logger.error(f"Критическая ошибка при получении списка книг: {e}", exc_info=True)
         return json.dumps({
             "status": "error",
             "message": "Ошибка на стороне сервера при получении списка книг"
@@ -99,11 +99,7 @@ def fetch_genres_json() -> str:
     try:
         with SessionLocal() as session:
             genres = get_genres(session)
-
-            result = [
-                {"id": genre.id, "name": genre.name}
-                for genre in genres
-            ]
+            result = [{"id": genre.id, "name": genre.name} for genre in genres]
 
         return json.dumps({
             "status": "success",
@@ -112,7 +108,7 @@ def fetch_genres_json() -> str:
         }, ensure_ascii=False)
 
     except Exception as e:
-        print(f"[Критическая ошибка сервера] {e}")
+        logger.error(f"Критическая ошибка при получении списка жанров: {e}", exc_info=True)
         return json.dumps({
             "status": "error",
             "message": "Ошибка на стороне сервера при получении списка жанров"
@@ -143,8 +139,6 @@ def recv_exact(sock: socket.socket, msg_len: int) -> bytes | None:
     return bytes(buffer)
 
 
-
-
 @dataclass
 class ClientSession:
     """Состояние одного клиентского подключения"""
@@ -153,20 +147,24 @@ class ClientSession:
 
 
 # --- Обработчики команд -------------------------------------------------------
-# Сигнатура каждой команды: (data: dict, ctx: ClientSession) -> str (JSON-ответ)
-def _handle_get_books(data: dict, ctx: ClientSession) -> str:
+
+def _handle_get_books(data: dict, ctx: ClientSession, log: ClientLoggerAdapter) -> str:
+    log.debug("Запрос списка книг")
     return fetch_books_json()
 
 
-def _handle_get_genres(data: dict, ctx: ClientSession) -> str:
+def _handle_get_genres(data: dict, ctx: ClientSession, log: ClientLoggerAdapter) -> str:
+    log.debug("Запрос списка жанров")
     return fetch_genres_json()
 
 
-def _handle_download(data: dict, ctx: ClientSession) -> str:
-    return fetch_file_json(data.get("file_path", ""))
+def _handle_download(data: dict, ctx: ClientSession, log: ClientLoggerAdapter) -> str:
+    file_path = data.get("file_path", "")
+    log.info(f"Скачивание файла: '{file_path}'")
+    return fetch_file_json(file_path)
 
 
-def _handle_login(data: dict, ctx: ClientSession) -> str:
+def _handle_login(data: dict, ctx: ClientSession, log: ClientLoggerAdapter) -> str:
     username = data.get("username", "")
     password = data.get("password", "")
     with SessionLocal() as session:
@@ -174,12 +172,14 @@ def _handle_login(data: dict, ctx: ClientSession) -> str:
         if user:
             ctx.role = user.role.value if hasattr(user.role, "value") else str(user.role)
             ctx.username = user.username
+            log.info(f"Успешный вход: username='{username}', role='{ctx.role}'")
             return json.dumps({
                 "status": "success",
                 "action": "login",
                 "user_data": {"username": user.username, "role": ctx.role}
             }, ensure_ascii=False)
         else:
+            log.warning(f"Неудачная попытка входа: username='{username}'")
             return json.dumps({
                 "status": "error",
                 "action": "login",
@@ -187,7 +187,7 @@ def _handle_login(data: dict, ctx: ClientSession) -> str:
             }, ensure_ascii=False)
 
 
-def _handle_register(data: dict, ctx: ClientSession) -> str:
+def _handle_register(data: dict, ctx: ClientSession, log: ClientLoggerAdapter) -> str:
     username = data.get("username", "")
     password = data.get("password", "")
     with SessionLocal() as session:
@@ -195,12 +195,14 @@ def _handle_register(data: dict, ctx: ClientSession) -> str:
         if success:
             ctx.role = result.role.value if hasattr(result.role, "value") else str(result.role)
             ctx.username = result.username
+            log.info(f"Новый пользователь зарегистрирован: username='{username}'")
             return json.dumps({
                 "status": "success",
                 "action": "login",
                 "user_data": {"username": result.username, "role": ctx.role}
             }, ensure_ascii=False)
         else:
+            log.warning(f"Неудачная регистрация: username='{username}', причина='{result}'")
             return json.dumps({
                 "status": "error",
                 "action": "login",
@@ -208,22 +210,27 @@ def _handle_register(data: dict, ctx: ClientSession) -> str:
             }, ensure_ascii=False)
 
 
-def _handle_add_genre(data: dict, ctx: ClientSession) -> str:
+def _handle_add_genre(data: dict, ctx: ClientSession, log: ClientLoggerAdapter) -> str:
+    name = data.get("name", "")
+    log.info(f"Добавление жанра: '{name}'")
     with SessionLocal() as session:
-        add_genre(session, data.get("name", ""))
+        add_genre(session, name)
     return fetch_genres_json()
 
 
-def _handle_delete_genres(data: dict, ctx: ClientSession) -> str:
+def _handle_delete_genres(data: dict, ctx: ClientSession, log: ClientLoggerAdapter) -> str:
     ids = [int(i) for i in data.get("ids", [])]
+    log.info(f"Удаление жанров: ids={ids}")
     with SessionLocal() as session:
         delete_genres(session, ids)
     return fetch_genres_json()
 
 
-def _handle_add_book(data: dict, ctx: ClientSession) -> str:
+def _handle_add_book(data: dict, ctx: ClientSession, log: ClientLoggerAdapter) -> str:
     try:
         book_filename = data["book_filename"]
+        log.info(f"Добавление книги: '{data.get('name', '')}', файл='{book_filename}'")
+
         with open(os.path.join(BOOKS_DIR, book_filename), "wb") as f:
             f.write(base64.b64decode(data["book_data"]))
 
@@ -246,22 +253,29 @@ def _handle_add_book(data: dict, ctx: ClientSession) -> str:
                 cover_path=cover_filename,
             )
             add_book(session, book)
+
         return fetch_books_json()
     except Exception as e:
-        print(f"[Ошибка добавления книги] {e}")
+        log.error(f"Ошибка добавления книги: {e}", exc_info=True)
         return json.dumps({"status": "error", "message": f"Ошибка при добавлении книги: {e}"}, ensure_ascii=False)
 
 
-def _handle_delete_book(data: dict, ctx: ClientSession) -> str:
+def _handle_delete_book(data: dict, ctx: ClientSession, log: ClientLoggerAdapter) -> str:
     book_id = int(data.get("id", 0))
+    log.info(f"Удаление книги: id={book_id}")
     with SessionLocal() as session:
         success = delete_book(session, book_id)
+    if not success:
+        log.warning(f"Книга не найдена при удалении: id={book_id}")
     return fetch_books_json() if success else json.dumps(
         {"status": "error", "message": "Книга не найдена"}, ensure_ascii=False)
 
 
-def _handle_edit_book(data: dict, ctx: ClientSession) -> str:
+def _handle_edit_book(data: dict, ctx: ClientSession, log: ClientLoggerAdapter) -> str:
     try:
+        book_id = data.get("id", "?")
+        log.info(f"Редактирование книги: id={book_id}")
+
         book_filename = None
         if data.get("book_data") and data.get("book_filename"):
             book_filename = data["book_filename"]
@@ -276,33 +290,40 @@ def _handle_edit_book(data: dict, ctx: ClientSession) -> str:
 
         with SessionLocal() as session:
             success = update_book(session, data, book_filename, cover_filename)
+
+        if not success:
+            log.warning(f"Книга не найдена при редактировании: id={book_id}")
+
         return fetch_books_json() if success else json.dumps(
             {"status": "error", "message": "Книга не найдена"}, ensure_ascii=False)
     except Exception as e:
-        print(f"[Ошибка изменения книги] {e}")
+        log.error(f"Ошибка редактирования книги: {e}", exc_info=True)
         return json.dumps({"status": "error", "message": str(e)}, ensure_ascii=False)
 
 
-# Универсальный словарь со всеми поддерживаемыми командами: action -> handler
+# Словарь: action -> handler
 HANDLERS: dict[str, callable] = {
-    "get_books": _handle_get_books,
-    "get_genres": _handle_get_genres,
-    "download": _handle_download,
-    "login": _handle_login,
-    "register": _handle_register,
-    "add_genre": _handle_add_genre,
+    "get_books":     _handle_get_books,
+    "get_genres":    _handle_get_genres,
+    "download":      _handle_download,
+    "login":         _handle_login,
+    "register":      _handle_register,
+    "add_genre":     _handle_add_genre,
     "delete_genres": _handle_delete_genres,
-    "add_book": _handle_add_book,
-    "delete_book": _handle_delete_book,
-    "edit_book": _handle_edit_book,
+    "add_book":      _handle_add_book,
+    "delete_book":   _handle_delete_book,
+    "edit_book":     _handle_edit_book,
 }
 
 
 # --- Основной цикл клиента -------------------------------------------------
+
 def handle_client(client: socket.socket, address):
     """Цикл работы с клиентом"""
-    print(f"[+] Подключился новый клиент: {address}")
     ctx = ClientSession()
+    log = ClientLoggerAdapter(logger, address, ctx)
+
+    log.info("Новое подключение")
 
     with client:
         while True:
@@ -318,22 +339,25 @@ def handle_client(client: socket.socket, address):
 
                 try:
                     data = json.loads(raw_data.decode())
-                except (UnicodeDecodeError, json.JSONDecodeError):
+                except (UnicodeDecodeError, json.JSONDecodeError) as e:
+                    log.warning(f"Неверный формат запроса: {e}")
                     err = json.dumps({"status": "error", "message": "Неверный формат запроса"})
                     client.sendall(len(err.encode()).to_bytes(4, "big") + err.encode())
                     continue
 
                 action = data.get("action", "")
-                print(f"[{address} ({ctx.username or 'Гость'})] action={action!r}")
+                log.info(f"action={action!r}")
 
                 if action in ADMIN_ONLY_COMMANDS and ctx.role != "admin":
+                    log.warning(f"Отказано в доступе: action={action!r}, role='{ctx.role}'")
                     response = json.dumps({
                         "status": "error",
                         "message": "Отказано в доступе: требуются права администратора"
                     }, ensure_ascii=False)
                 elif action in HANDLERS:
-                    response = HANDLERS[action](data, ctx)
+                    response = HANDLERS[action](data, ctx, log)
                 else:
+                    log.warning(f"Неизвестная команда: {action!r}")
                     response = json.dumps({
                         "status": "error",
                         "message": f"Неизвестная команда: {action!r}"
@@ -343,22 +367,20 @@ def handle_client(client: socket.socket, address):
                 client.sendall(len(encoded).to_bytes(4, "big") + encoded)
 
             except OSError as e:
-                print(f"[{address}] Разрыв соединения: {e}")
+                log.warning(f"Разрыв соединения: {e}")
                 break
 
-    print(f"[-] Отключился: {address}")
+    log.info("Клиент отключился")
 
 
 def start_server():
     init_db()
 
     with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as server:
-        # Нужно, чтобы быстро перезапустить сервер без "TIME_WAIT"
         server.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-
         server.bind((SERVER_HOST, SERVER_PORT))
         server.listen()
-        print(f"Сервер запущен на {SERVER_HOST}:{SERVER_PORT}")
+        logger.info(f"Сервер запущен на {SERVER_HOST}:{SERVER_PORT}")
 
         while True:
             client, addr = server.accept()
