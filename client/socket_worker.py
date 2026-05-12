@@ -59,8 +59,13 @@ class SocketWorker(QThread):
                 # Проверка статуса и типа ответа
                 if isinstance(json_data, dict):
                     status = json_data.get("status")
+                    action = json_data.get("action", "")
+
                     if status == "error":
-                        self.error_occurred.emit(json_data["message"])
+                        self.error_occurred.emit(json_data.get("message", "Неизвестная ошибка"))
+                        # Если ошибка связана с логином — уведомляем контроллер
+                        if action == "login":
+                            self.login_result.emit(False, {})
 
                     elif status == "success":
                         action = json_data.get("action", "books")
@@ -73,12 +78,9 @@ class SocketWorker(QThread):
                             file_bytes = base64.b64decode(json_data["file_data"])
                             self.file_received.emit(filename, file_bytes)
                         elif action == "login":
-                            if status == "success":
-                                # Эмитируем успех и передаем данные (например, роль или имя)
-                                self.login_result.emit(True, json_data.get("user_data", {}))
-                            else:
-                                self.login_result.emit(False, {})
-                                self.error_occurred.emit(json_data.get("message", "Ошибка входа"))
+                            # Здесь мы уже внутри ветки status == "success",
+                            # поэтому повторная проверка не нужна
+                            self.login_result.emit(True, json_data.get("user_data", {}))
 
         except ConnectionRefusedError:
             self.error_occurred.emit("Сервер недоступен")
