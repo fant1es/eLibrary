@@ -196,3 +196,17 @@ QScrollBar::handle:vertical {
 QScrollBar::handle:vertical:hover {
     background: #4CAF50;
 }
+
+#ErrorBox {
+    background-color: #424242; /* Темно-серый фон */
+}
+
+#ErrorBox QLabel {
+    color: #ffffff;            /* Белый текст */
+    font-size: 13px;
+}
+
+#ErrorBox QPushButton {
+    background-color: #ffffff;
+    color: #333333;
+}

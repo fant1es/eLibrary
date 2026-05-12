@@ -184,10 +184,13 @@ class AddBookWin(QtWidgets.QWidget, addBookWidget.Ui_addBookWidget):
 
         # Отдельный вывод всех ошибок
         if errors:
-            QtWidgets.QMessageBox.warning(
-                self, "Ошибки заполнения",
-                "\n".join(f"• {e}" for e in errors)
-            )
+            msg = QMessageBox()
+            msg.setWindowTitle("Ошибка!")
+            msg.setObjectName("ErrorBox")  # <-- Важный момент
+            msg.setIcon(QMessageBox.Icon.Warning)
+            msg.setText("Ошибки заполнения:\n" +
+                "\n".join(f"• {e}" for e in errors))
+            msg.exec()
             return None
 
         # Автоисправление поля в интерфейсе
