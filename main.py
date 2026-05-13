@@ -9,12 +9,9 @@ class AppController:
     def __init__(self):
         self.app = QApplication(sys.argv)
 
+        # Создаём класс с сокетом, но не запускаем, после первой попытке входа/регистрации
         self.socket_worker = SocketWorker()
-        self.socket_worker.start()
 
-        self.socket_worker.error_occurred.connect(self.show_error_message) # Добавляем связь
-
-        # Сначала окно с логином, главное после входа
         self.login_window = Login(self.socket_worker)
         self.main_window = None
 
@@ -22,21 +19,15 @@ class AppController:
 
         self.login_window.show()
 
-    def show_error_message(self, message):
-        from PyQt6.QtWidgets import QMessageBox
-        QMessageBox.critical(self.login_window, "Ошибка", message)
-
     def handle_login(self, success, user_data):
         if success:
             print(f"Авторизация успешна! Роль: {user_data.get('role')}")
             self.login_window.hide()
 
-            # Передаем роль для соответствия отображения возможностей админа
             user_role = user_data.get('role', 'user')
             self.main_window = Client(self.socket_worker, user_role)
             self.main_window.show()
         else:
-            # Окно логина само покажет ошибку через error_occurred
             print("Вход или регистрация не удались")
 
     def run(self):

@@ -24,18 +24,31 @@ class SocketWorker(QThread):
 
     error_occurred = pyqtSignal(str)
 
-    HOST = os.getenv("SERVER_HOST", "127.0.0.1")
-    PORT = int(os.getenv("SERVER_PORT", 8080))
+    # Значения по умолчанию из .env
+    DEFAULT_HOST = os.getenv("SERVER_HOST", "127.0.0.1")
+    DEFAULT_PORT = int(os.getenv("SERVER_PORT", 8080))
 
     def __init__(self):
         super().__init__()
         self._socket: socket.socket | None = None
         self._running = False
+        # Параметры подключения — задаются перед вызовом start()
+        self.host = self.DEFAULT_HOST
+        self.port = self.DEFAULT_PORT
+
+    def set_connection_params(self, host: str, port: int):
+        """Задаёт адрес и порт до старта потока"""
+        self.host = host
+        self.port = port
+
+    @property
+    def is_connected(self) -> bool:
+        return self._running
 
     def run(self):
         try:
             self._socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-            self._socket.connect((self.HOST, self.PORT))
+            self._socket.connect((self.host, self.port))
             self._running = True
             self.connected.emit()
 
@@ -78,12 +91,10 @@ class SocketWorker(QThread):
                             file_bytes = base64.b64decode(json_data["file_data"])
                             self.file_received.emit(filename, file_bytes)
                         elif action == "login":
-                            # Здесь мы уже внутри ветки status == "success",
-                            # поэтому повторная проверка не нужна
                             self.login_result.emit(True, json_data.get("user_data", {}))
 
         except ConnectionRefusedError:
-            self.error_occurred.emit("Сервер недоступен")
+            self.error_occurred.emit(f"Сервер недоступен ({self.host}:{self.port})")
         except OSError:
             # Здесь неожиданный обрыв, а не наш stop()
             if self._running:

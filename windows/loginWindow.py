@@ -12,13 +12,15 @@ from PyQt6 import QtCore, QtGui, QtWidgets
 class Ui_MainWindow(object):
     def setupUi(self, MainWindow):
         MainWindow.setObjectName("MainWindow")
-        MainWindow.resize(800, 413)
-        MainWindow.setMinimumSize(QtCore.QSize(800, 413))
-        MainWindow.setMaximumSize(QtCore.QSize(800, 413))
+        MainWindow.resize(800, 500)
+        MainWindow.setMinimumSize(QtCore.QSize(800, 500))
+        MainWindow.setMaximumSize(QtCore.QSize(800, 500))
         self.centralwidget = QtWidgets.QWidget(parent=MainWindow)
         self.centralwidget.setObjectName("centralwidget")
         self.verticalLayout_2 = QtWidgets.QVBoxLayout(self.centralwidget)
         self.verticalLayout_2.setObjectName("verticalLayout_2")
+
+        # --- Заголовок ---
         self.label = QtWidgets.QLabel(parent=self.centralwidget)
         sizePolicy = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Policy.Preferred, QtWidgets.QSizePolicy.Policy.Minimum)
         sizePolicy.setHorizontalStretch(0)
@@ -30,6 +32,7 @@ class Ui_MainWindow(object):
         self.label.setFont(font)
         self.label.setObjectName("label")
         self.verticalLayout_2.addWidget(self.label, 0, QtCore.Qt.AlignmentFlag.AlignHCenter|QtCore.Qt.AlignmentFlag.AlignVCenter)
+
         self.label_4 = QtWidgets.QLabel(parent=self.centralwidget)
         sizePolicy = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Policy.Preferred, QtWidgets.QSizePolicy.Policy.Fixed)
         sizePolicy.setHorizontalStretch(0)
@@ -41,6 +44,50 @@ class Ui_MainWindow(object):
         self.label_4.setFont(font)
         self.label_4.setObjectName("label_4")
         self.verticalLayout_2.addWidget(self.label_4, 0, QtCore.Qt.AlignmentFlag.AlignHCenter|QtCore.Qt.AlignmentFlag.AlignVCenter)
+
+        # --- Адрес сервера (IP + порт в одной строке) ---
+        self.horizontalWidget_server = QtWidgets.QWidget(parent=self.centralwidget)
+        self.horizontalWidget_server.setMinimumSize(QtCore.QSize(0, 50))
+        self.horizontalWidget_server.setObjectName("horizontalWidget_server")
+        self.horizontalLayout_server = QtWidgets.QHBoxLayout(self.horizontalWidget_server)
+        self.horizontalLayout_server.setObjectName("horizontalLayout_server")
+
+        self.label_host = QtWidgets.QLabel(parent=self.horizontalWidget_server)
+        font = QtGui.QFont()
+        font.setPointSize(12)
+        self.label_host.setFont(font)
+        self.label_host.setObjectName("label_host")
+        self.horizontalLayout_server.addWidget(self.label_host)
+
+        self.host_edit = QtWidgets.QLineEdit(parent=self.horizontalWidget_server)
+        font = QtGui.QFont()
+        font.setPointSize(12)
+        self.host_edit.setFont(font)
+        self.host_edit.setObjectName("host_edit")
+        self.host_edit.setPlaceholderText("127.0.0.1")
+        self.horizontalLayout_server.addWidget(self.host_edit)
+
+        self.label_port = QtWidgets.QLabel(parent=self.horizontalWidget_server)
+        font = QtGui.QFont()
+        font.setPointSize(12)
+        self.label_port.setFont(font)
+        self.label_port.setObjectName("label_port")
+        self.horizontalLayout_server.addWidget(self.label_port)
+
+        self.port_edit = QtWidgets.QLineEdit(parent=self.horizontalWidget_server)
+        font = QtGui.QFont()
+        font.setPointSize(12)
+        self.port_edit.setFont(font)
+        self.port_edit.setObjectName("port_edit")
+        self.port_edit.setPlaceholderText("8080")
+        self.port_edit.setMaximumWidth(90)
+        # Разрешаем вводить только цифры
+        self.port_edit.setValidator(QtGui.QIntValidator(1, 65535))
+        self.horizontalLayout_server.addWidget(self.port_edit)
+
+        self.verticalLayout_2.addWidget(self.horizontalWidget_server)
+
+        # --- Имя пользователя ---
         self.horizontalWidget = QtWidgets.QWidget(parent=self.centralwidget)
         self.horizontalWidget.setMinimumSize(QtCore.QSize(0, 80))
         self.horizontalWidget.setObjectName("horizontalWidget")
@@ -59,6 +106,8 @@ class Ui_MainWindow(object):
         self.username_edit.setObjectName("username_edit")
         self.horizontalLayout.addWidget(self.username_edit)
         self.verticalLayout_2.addWidget(self.horizontalWidget)
+
+        # --- Пароль ---
         self.horizontalWidget_2 = QtWidgets.QWidget(parent=self.centralwidget)
         self.horizontalWidget_2.setMinimumSize(QtCore.QSize(0, 80))
         self.horizontalWidget_2.setObjectName("horizontalWidget_2")
@@ -78,6 +127,8 @@ class Ui_MainWindow(object):
         self.password_edit.setObjectName("password_edit")
         self.horizontalLayout_2.addWidget(self.password_edit)
         self.verticalLayout_2.addWidget(self.horizontalWidget_2)
+
+        # --- Кнопки ---
         self.horizontalWidget_3 = QtWidgets.QWidget(parent=self.centralwidget)
         self.horizontalWidget_3.setObjectName("horizontalWidget_3")
         self.horizontalLayout_3 = QtWidgets.QHBoxLayout(self.horizontalWidget_3)
@@ -91,6 +142,7 @@ class Ui_MainWindow(object):
         self.register_btn.setObjectName("register_btn")
         self.horizontalLayout_3.addWidget(self.register_btn)
         self.verticalLayout_2.addWidget(self.horizontalWidget_3)
+
         MainWindow.setCentralWidget(self.centralwidget)
         self.menubar = QtWidgets.QMenuBar(parent=MainWindow)
         self.menubar.setGeometry(QtCore.QRect(0, 0, 800, 22))
@@ -108,6 +160,8 @@ class Ui_MainWindow(object):
         MainWindow.setWindowTitle(_translate("MainWindow", "Вход"))
         self.label.setText(_translate("MainWindow", "Добро пожаловать!"))
         self.label_4.setText(_translate("MainWindow", "Введите имя и пароль для входа или регистрации:"))
+        self.label_host.setText(_translate("MainWindow", "Адрес сервера:"))
+        self.label_port.setText(_translate("MainWindow", "Порт:"))
         self.label_2.setText(_translate("MainWindow", "Введите имя пользователя::"))
         self.label_3.setText(_translate("MainWindow", "Введите пароль:"))
         self.login_btn.setText(_translate("MainWindow", "Войти"))
