@@ -23,7 +23,7 @@ class Login(QtWidgets.QMainWindow, loginWindow.Ui_MainWindow):
         self.socket_worker.connected.connect(self._on_connected)
         self.socket_worker.error_occurred.connect(self._on_error)
 
-    # --- Вспомогательные методы -------------------------------------------------------
+    # region Вспомогательные методы -------------------------------------------------------
     def _get_connection_params(self) -> tuple[str, int] | None:
         """Читает IP и порт из полей"""
         host = self.host_edit.text().strip() or self.host_edit.placeholderText()
@@ -53,7 +53,7 @@ class Login(QtWidgets.QMainWindow, loginWindow.Ui_MainWindow):
             self.socket_worker.set_connection_params(host, port)
             self.socket_worker.start()
 
-        # В любом случае сохраняем действие — оно выполнится в _on_connected
+        # В любом случае сохраняем действие для _on_connected
         self._pending_action = payload
 
     def _on_connected(self):
@@ -66,7 +66,9 @@ class Login(QtWidgets.QMainWindow, loginWindow.Ui_MainWindow):
         self._pending_action = None  # сбрасываем отложенное действие при ошибке
         QtWidgets.QMessageBox.critical(self, "Ошибка", message)
 
-    # --- Команды от кнопок ---------------------------------
+    # endregion
+
+    # region Команды от кнопок ---------------------------------
     def try_login(self):
         username = self.username_edit.text()
         password = self.password_edit.text()
@@ -76,3 +78,5 @@ class Login(QtWidgets.QMainWindow, loginWindow.Ui_MainWindow):
         username = self.username_edit.text()
         password = self.password_edit.text()
         self._send_or_queue({"action": "register", "username": username, "password": password})
+
+    # endregion

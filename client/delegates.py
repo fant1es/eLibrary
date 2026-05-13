@@ -4,7 +4,6 @@ from PyQt6.QtCore import Qt
 
 def _setup_spin(parent, min_val, max_val, step, decimals):
     """Вспомогательный метод для создания спин боксов"""
-
     spin = QDoubleSpinBox(parent)
     spin.setRange(min_val, max_val)
     spin.setSingleStep(step)
@@ -16,7 +15,7 @@ def _setup_spin(parent, min_val, max_val, step, decimals):
 
 class RangeDelegate(QStyledItemDelegate):
     """Делегат для установки спинбоксов рейтинга и даты издания"""
-
+    # Роли для доступа к конкретным данным
     RoleTag = Qt.ItemDataRole.UserRole + 1
     RoleMin = Qt.ItemDataRole.UserRole + 2
     RoleMax = Qt.ItemDataRole.UserRole + 3

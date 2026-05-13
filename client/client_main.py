@@ -16,21 +16,24 @@ from windows.window_classes import AboutAuthorWin, AboutProgramWin
 
 
 class Client(QtWidgets.QMainWindow, clientWindow.Ui_MainWindow):
+    """Главный класс клиента с основным окном"""
+
     def __init__(self, socket_worker, user_role):
         super().__init__()
         self.setupUi(self)
 
         with open("styles/style.qss", "r", encoding="utf-8") as file:
             self.setStyleSheet(file.read())
+        self.scroll_area.setWidgetResizable(True)
 
+        # --- Основные данные ----------------------------------
         self.all_books = []
         self.all_genres = []
-        self.scroll_area.setWidgetResizable(True)
         self.user_role = user_role
         self.setup_permissions()
 
         # --- Окна администратора ------------------------------
-        # --- Окно добавления/редактирования (универсальное) ------------
+        # --- Окно добавления/редактирования ------------
         self.add_book_btn.clicked.connect(self.add_book_print)
         self.add_book_window = AddBookWin()
 
@@ -71,7 +74,7 @@ class Client(QtWidgets.QMainWindow, clientWindow.Ui_MainWindow):
         # --- Установка потока с сокетом ------------------------
         self.socket_worker = socket_worker
 
-        # Запрашиваем необходимые данные
+        # Запрашиваем необходимые данные при открытии окна
         self.socket_worker.send_json({"action": "get_books"})
         self.socket_worker.send_json({"action": "get_genres"})
 
@@ -112,22 +115,11 @@ class Client(QtWidgets.QMainWindow, clientWindow.Ui_MainWindow):
         self.sort_combobox.currentIndexChanged.connect(self.apply_filters)
         self.reverse_sorting_btn.clicked.connect(self._toggle_sort_direction)
 
-        # --- Привязка событий под кнопки и триггеры ------------
+        # --- Для выхода ------------
         self.exit_btn.clicked.connect(self.exit)
         self.exit_action.triggered.connect(self.exit)
 
-    def setup_permissions(self):
-        """Скрывает или показывает кнопки управления в зависимости от роли"""
-        is_admin = (self.user_role == "admin")
-
-        # Если не админ — скрываем кнопки
-        self.add_book_btn.setVisible(is_admin)
-        self.del_book_btn.setVisible(is_admin)
-        self.edit_book_btn.setVisible(is_admin)
-
-        if not is_admin:
-            print("Доступ ограничен: режим пользователя")
-
+    # region Вывод окон ----------------------------------
     def about_author_print(self):
         if self.about_author_window.isHidden():
             try:
@@ -175,6 +167,8 @@ class Client(QtWidgets.QMainWindow, clientWindow.Ui_MainWindow):
         if not self.all_books:
             QMessageBox.information(self, "Инфо", "Список книг пуст")
             return
+
+        # Передаем все книги для карточек
         self.edit_book_window.refresh_books(self.all_books)
         self.edit_book_window.exec()
 
@@ -191,7 +185,9 @@ class Client(QtWidgets.QMainWindow, clientWindow.Ui_MainWindow):
             self.add_book_window.load_for_edit(book_data, self.all_genres)
             self.add_book_window.show()
 
-    # --- Работа с жанрами --------------------------------------
+    # endregion
+
+    # region Получение данных при старте ----------------------------
     def on_genres_received(self, genres: list[dict]):
         self.all_genres = genres.copy()
         # Обновляем виджет, если окно открыто
@@ -200,7 +196,6 @@ class Client(QtWidgets.QMainWindow, clientWindow.Ui_MainWindow):
         # Обновляем фильтр жанров в дереве
         self._update_genre_filters(self.all_genres)
 
-    # --- Работа с книгами --------------------------------------
     def on_books_received(self, books: list[dict]):
         self.all_books = books.copy()
         # Обновляем список авторов в фильтре
@@ -208,7 +203,21 @@ class Client(QtWidgets.QMainWindow, clientWindow.Ui_MainWindow):
         # Применяем текущие фильтры
         self.apply_filters()
 
-    # --- Фильтрация ------------------------------------------------
+    def setup_permissions(self):
+        """Скрывает или показывает кнопки управления в зависимости от роли"""
+        is_admin = (self.user_role == "admin")
+
+        # Скрываем кнопки
+        self.add_book_btn.setVisible(is_admin)
+        self.del_book_btn.setVisible(is_admin)
+        self.edit_book_btn.setVisible(is_admin)
+
+        if not is_admin:
+            print("Доступ ограничен: режим пользователя")
+
+    # endregion
+
+    # region Фильтрация ------------------------------------------------
     def _update_genre_filters(self, genres: list[dict]):
         """Перестраивает чекбоксы жанров в дереве фильтров."""
         self.tree_model.blockSignals(True)
@@ -345,7 +354,9 @@ class Client(QtWidgets.QMainWindow, clientWindow.Ui_MainWindow):
 
         self._render_books(self._sort_books(self._fuzzy_search(filtered)))
 
-    # --- Поиск ---------------------------------------------------
+    # endregion
+
+    # region Поиск ---------------------------------------------------
     _SEARCH_THRESHOLD = 72
 
     def _fuzzy_search(self, books: list[dict]) -> list[dict]:
@@ -397,6 +408,9 @@ class Client(QtWidgets.QMainWindow, clientWindow.Ui_MainWindow):
         scored.sort(key=lambda x: x[0], reverse=True)
         return [book for _, book in scored]
 
+    # endregion
+
+    # region Сортировка --------------------------------------------
     def _toggle_sort_direction(self):
         """Переключает направление сортировки и обновляет список."""
         self.sort_ascending = not self.sort_ascending
@@ -446,6 +460,9 @@ class Client(QtWidgets.QMainWindow, clientWindow.Ui_MainWindow):
 
         return books  # fallback
 
+    # endregion
+
+    # --- Отрисовка книг ------------------------------------
     def _render_books(self, books: list[dict]):
         """Отрисовывает карточки переданного списка книг"""
         layout = self.scrollAreaWidgetContents.layout() or QVBoxLayout(self.scrollAreaWidgetContents)
@@ -481,7 +498,7 @@ class Client(QtWidgets.QMainWindow, clientWindow.Ui_MainWindow):
         self.scrollAreaWidgetContents.adjustSize()
         self.scroll_area.update()
 
-    # --- Прочее ----------------------------------------
+    # region Прочее ----------------------------------------
     def save_file(self, filename: str, data: bytes):
         path, _ = QtWidgets.QFileDialog.getSaveFileName(self, "Сохранить книгу", filename)
         if path:
@@ -500,6 +517,8 @@ class Client(QtWidgets.QMainWindow, clientWindow.Ui_MainWindow):
         self.socket_worker.stop()
         self.socket_worker.wait()
         self.close()
+
+    # endregion
 
     # --- Построение дерева фильтров ----------------------------
     def _setup_filter_tree(self) -> QStandardItemModel:

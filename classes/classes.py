@@ -7,6 +7,7 @@ from windows.bookCardWidget import Ui_BookCardWidget
 
 
 class BookCard(QWidget):
+    """Карточка с книгой для отображения в главном окне"""
     # Вызывает сокет для отправки запроса на скачивание
     download_requested = pyqtSignal(str)
 

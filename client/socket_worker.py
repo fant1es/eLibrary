@@ -20,7 +20,8 @@ class SocketWorker(QThread):
     genres_received = pyqtSignal(list)
     file_received = pyqtSignal(str, bytes)
 
-    login_result = pyqtSignal(bool, dict)  # (Успех: True/False, Данные пользователя)
+    # (Успех: True/False, Данные пользователя)
+    login_result = pyqtSignal(bool, dict)
 
     error_occurred = pyqtSignal(str)
 
@@ -46,7 +47,9 @@ class SocketWorker(QThread):
         return self._running
 
     def run(self):
+        """Цикл работы сокета, запускается при start()"""
         try:
+            # Установка сокета
             self._socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
             self._socket.connect((self.host, self.port))
             self._running = True

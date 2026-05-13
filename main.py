@@ -6,6 +6,7 @@ from client.socket_worker import SocketWorker
 
 
 class AppController:
+    """Класс для управления клиентским приложением"""
     def __init__(self):
         self.app = QApplication(sys.argv)
 
@@ -20,6 +21,7 @@ class AppController:
         self.login_window.show()
 
     def handle_login(self, success, user_data):
+        """Обработка попытки авторизации/регистрации"""
         if success:
             print(f"Авторизация успешна! Роль: {user_data.get('role')}")
             self.login_window.hide()
